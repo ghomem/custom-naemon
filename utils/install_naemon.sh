@@ -37,7 +37,7 @@ systemctl stop naemon
 
 # Run Puppet agent
 echo "Running Puppet agent..."
-puppet agent -t || true
+sudo puppet agent -t || true
 
 # Add Naemon user to necessary groups
 echo "Adding Naemon user to www-data and sudo groups..."
