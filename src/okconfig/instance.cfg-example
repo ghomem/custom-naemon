@@ -31,11 +31,6 @@ define service {
 }
 
 define service {
-        use                     template_check_ssh_package_count
-        host_name               HOSTNAME
-}
-
-define service {
         use                     template_check_ssh_os_version
         host_name               HOSTNAME
 }
