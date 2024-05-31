@@ -119,5 +119,9 @@ rm -f printer.cfg switch.cfg windows.cfg
 rm -f templates/hosts.cfg templates/contacts.cfg
 
 systemctl enable naemon thruk apache2
+systemctl restart naemon
+systemctl restart thruk
+systemctl restart apache2
+systemctl restart nginx
 
 echo "Script completed successfully."
