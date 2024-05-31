@@ -13,6 +13,10 @@ trap 'handle_error $LINENO' ERR
 
 export DEBIAN_FRONTEND=noninteractive
 
+# Update the System
+sudo apt update
+sudo apt dist-upgrade
+
 # Download and add Naemon's GPG key
 echo "Adding Naemon's GPG key..."
 curl -s -o /etc/apt/trusted.gpg.d/naemon.asc "https://build.opensuse.org/projects/home:naemon/signing_keys/download?kind=gpg"
@@ -134,6 +138,9 @@ su - naemon -c 'ssh-keygen -t rsa -b 2048 -f /home/naemon/.ssh/id_rsa -q -N ""'
 # print the public key
 echo "The following is the public key of the naemon user. Copy the middle part of it and use hashman to add the key to the database."
 echo ""
+echo ""
 cat /home/naemon/.ssh/id_rsa.pub
+echo ""
+echo ""
 
 echo "Script completed successfully."
