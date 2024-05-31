@@ -15,7 +15,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 # Update the System
 sudo apt update
-sudo apt dist-upgrade
+sudo apt dist-upgrade -y -q -o Dpkg::Options::="--force-confold" -o Dpkg::Options::="--force-confdef"
 
 # Download and add Naemon's GPG key
 echo "Adding Naemon's GPG key..."
@@ -134,6 +134,10 @@ su - naemon -c "chmod 700 /home/naemon/.ssh"
 
 # Generate SSH key without any interaction
 su - naemon -c 'ssh-keygen -t rsa -b 2048 -f /home/naemon/.ssh/id_rsa -q -N ""'
+
+# Create ssh_config file for naemon
+su - naemon -c 'echo -e "Host *\n    StrictHostKeyChecking no" > /home/naemon/.ssh/config'
+su - naemon -c 'chmod 600 /home/naemon/.ssh/config'
 
 # print the public key
 echo "The following is the public key of the naemon user. Copy the middle part of it and use hashman to add the key to the database."
