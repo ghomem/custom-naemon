@@ -2,6 +2,8 @@
 
 set -e
 
+$FQDN=$1
+
 # Function to handle errors gracefully
 handle_error() {
     echo "Error on line $1"
@@ -33,7 +35,15 @@ chmod 700 /home/naemon/.ssh
 
 # Stop Naemon service
 echo "Stopping Naemon service..."
-systemctl stop naemon
+systemctl stop naemon thruk apache2
+
+sed -i 's|^Listen 80|Listen 8080|' /etc/apache2/ports.conf
+sed -i 's|^<VirtualHost *:80>|<VirtualHost *:8080>|' /etc/apache2/sites-available/000-default.conf
+sed -i "s|^        #ServerName*|        ServerName ${FQDN}|" /etc/apache2/sites-available/000-default.conf
+sed -i 's|^cookie_auth_restricted_url        = http://localhost/thruk/cgi-bin/restricted.cgi|cookie_auth_restricted_url        = http://localhost:8080/thruk/cgi-bin/restricted.cgi|' /etc/thruk/thruk.conf
+sed -i 's|^STARTURL="http://localhost/thruk/cgi-bin/remote.cgi?startup"|STARTURL="http://localhost:8080/thruk/cgi-bin/remote.cgi?startup"' /etc/init.d/thruk
+
+systemctl daemon-reload
 
 # Run Puppet agent
 echo "Running Puppet agent..."
@@ -93,6 +103,10 @@ cp /tmp/custom-naemon/src/naemon/templates.cfg /etc/naemon/conf.d/templates/
 cp /tmp/custom-naemon/src/thruk/* /etc/thruk
 cp /tmp/custom-naemon/src/okconfig/instance.cfg-example /etc/naemon/okconfig/examples/
 
+mkdir -p /opt/sysmon-utils
+
+cp /tmp/custom-naemon/utils/sysmon-cli.py /opt/sysmon-utils/
+
 # Initialize and verify okconfig
 echo "Initializing and verifying okconfig..."
 okconfig init
@@ -103,5 +117,7 @@ echo "Removing unnecessary default configuration files..."
 cd /etc/naemon/conf.d
 rm -f printer.cfg switch.cfg windows.cfg
 rm -f templates/hosts.cfg templates/contacts.cfg
+
+systemctl enable naemon thruk apache2
 
 echo "Script completed successfully."

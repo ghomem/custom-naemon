@@ -5,13 +5,13 @@ import os
 def print_usage():
     usage = """
     Usage:
-        sudo ./sysmon-cli.sh addhost <host_name> --address <hostname_or_ip> [--template <template_name>]
-        sudo ./sysmon-cli.sh removehost <host_name>
-        sudo ./sysmon-cli.sh listhosts
-        sudo ./sysmon-cli.sh addtemplate <host_name> --template <template_name>
-        sudo ./sysmon-cli.sh addservice <host_name> --service <service_template>
-        sudo ./sysmon-cli.sh listservices <host_name>
-        sudo ./sysmon-cli.sh removeservice <host_name> --service <service_name>
+        sudo python opt/sysmon-utils/sysmon-cli.py addhost <host_name> --address <hostname_or_ip> [--template <template_name>]
+        sudo python opt/sysmon-utils/sysmon-cli.py removehost <host_name>
+        sudo python opt/sysmon-utils/sysmon-cli.py listhosts
+        sudo python opt/sysmon-utils/sysmon-cli.py addtemplate <host_name> --template <template_name>
+        sudo python opt/sysmon-utils/sysmon-cli.py addservice <host_name> --service <service_template>
+        sudo python opt/sysmon-utils/sysmon-cli.py listservices <host_name>
+        sudo python opt/sysmon-utils/sysmon-cli.py removeservice <host_name> --service <service_name>
     """
     print(usage)
 
