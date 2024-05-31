@@ -124,4 +124,16 @@ systemctl restart thruk
 systemctl restart apache2
 systemctl restart nginx
 
+# Ensure the .ssh directory exists and has the correct permissions
+su - naemon -c "mkdir -p /home/naemon/.ssh"
+su - naemon -c "chmod 700 /home/naemon/.ssh"
+
+# Generate SSH key without any interaction
+su - naemon -c 'ssh-keygen -t rsa -b 2048 -f /home/naemon/.ssh/id_rsa -q -N ""'
+
+# print the public key
+echo "The following is the public key of the naemon user. Copy the middle part of it and use hashman to add the key to the database."
+echo ""
+cat /home/naemon/.ssh/id_rsa.pub
+
 echo "Script completed successfully."
