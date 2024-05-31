@@ -120,9 +120,9 @@ rm -f templates/hosts.cfg templates/contacts.cfg
 
 systemctl enable naemon thruk apache2
 systemctl restart naemon
-systemctl restart thruk
 systemctl restart apache2
 systemctl restart nginx
+systemctl restart thruk
 
 # Ensure the .ssh directory exists and has the correct permissions
 su - naemon -c "mkdir -p /home/naemon/.ssh"
