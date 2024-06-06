@@ -12,6 +12,7 @@ def print_usage():
         sudo python /opt/sysmon-utils/sysmon-cli.py addservice <host_name> --service <service_template>
         sudo python /opt/sysmon-utils/sysmon-cli.py listservices <host_name>
         sudo python /opt/sysmon-utils/sysmon-cli.py removeservice <host_name> --service <service_name>
+        sudo python /opt/sysmon-utils/sysmon-cli.py allservices
     """
     print(usage)
 
@@ -54,7 +55,30 @@ def remove_host(host_name):
     restart_services()
 
 def list_hosts():
-    execute_command("sudo pynag list host_name address WHERE object_type=host | egrep -v '^null'")
+    try:
+        result = subprocess.run("sudo pynag list host_name address WHERE object_type=host | egrep -v '^null'", 
+                                shell=True, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed: {e}")
+        sys.exit(1)
+
+    lines = result.stdout.strip().split('\n')
+    # Print the header
+    print(f"{'host_name':<20} {'address':<20} {'host_definition_file':<60} {'service_definition_file':<60}")
+    print('-' * 140)
+    
+    for line in lines:
+        if "---" in line or "host_name" in line:
+            continue
+        if line.strip():
+            parts = line.split()
+            host_name = parts[0]
+            address = parts[1]
+            host_def_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-host.cfg"
+            service_def_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg"
+            print(f"{host_name:<20} {address:<20} {host_def_file:<60} {service_def_file:<60}")
+    
+    print(f"{'-' * 140}")
 
 def add_template(host_name, template_name):
     execute_command(f"sudo PYTHONPATH=$PYTHONPATH:/opt/okconfig okconfig addtemplate {host_name} --template {template_name} --force")
@@ -70,6 +94,9 @@ def list_services(host_name):
 def remove_service(host_name, service_name):
     execute_command(f"sudo pynag delete where object_type=service and host_name={host_name} and use={service_name}")
     restart_services()
+
+def all_services():
+    execute_command("grep name /etc/naemon/conf.d/templates/services.cfg | awk '{ print $2 }' |sort")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
@@ -104,6 +131,8 @@ if __name__ == "__main__":
             list_services(sys.argv[2])
         elif command == "removeservice" and len(sys.argv) == 5 and sys.argv[3] == "--service":
             remove_service(sys.argv[2], sys.argv[4])
+        elif command == "allservices" and len(sys.argv) == 2:
+            all_services()
         else:
             print_usage()
             sys.exit(1)
