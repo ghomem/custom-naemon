@@ -46,6 +46,7 @@ sed -i "s|^\s*#ServerName\s.*|        ServerName ${FQDN}|" /etc/apache2/sites-av
 sed -i 's|^cookie_auth_restricted_url        = http://localhost/thruk/cgi-bin/restricted.cgi|cookie_auth_restricted_url        = http://localhost:8080/thruk/cgi-bin/restricted.cgi|' /etc/thruk/thruk.conf
 sed -i 's|^STARTURL="http://localhost/thruk/cgi-bin/remote.cgi?startup"|STARTURL="http://localhost:8080/thruk/cgi-bin/remote.cgi?startup"|' /etc/init.d/thruk
 sed -i 's|^::1 localhost ip6-localhost ip6-loopback|::1 ip6-localhost ip6-loopback|' /etc/hosts
+sed -i 's|^service_check_timeout=60|service_check_timeout=600|' /etc/naemon/naemon.conf
 
 systemctl daemon-reload
 

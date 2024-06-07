@@ -92,6 +92,8 @@ def add_service(host_name, service_template):
 
 def list_services(host_name):
     execute_command(f"sudo pynag list host_name use WHERE object_type=service and host_name={host_name}")
+    print (f"The host is defined in /etc/naemon/okconfig/hosts/default/{host_name}-host.cfg")
+    print (f"The host services are defined in /etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg")
 
 def remove_service(host_name, service_name):
     execute_command(f"sudo pynag delete where object_type=service and host_name={host_name} and use={service_name}")
