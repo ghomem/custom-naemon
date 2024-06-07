@@ -91,25 +91,25 @@ sed -i 's|^    linefh.write(template)|#    linefh.write(template)|' /opt/okconfi
 
 # Clone custom-naemon repository and set up configurations
 echo "Cloning custom-naemon repository and setting up configurations..."
-cd /tmp
+cd /opt
 git clone https://github.com/ghomem/custom-naemon.git
-chmod -R 664 /tmp/custom-naemon/
-chown -R naemon:naemon /tmp/custom-naemon/src/naemon/
+chmod -R 664 /opt/custom-naemon/
+chown -R naemon:naemon /opt/custom-naemon/src/naemon/
 
 # Copy custom configurations to Naemon directory
 echo "Copying custom configurations to Naemon directory..."
-cp /tmp/custom-naemon/src/naemon/commands.cfg /etc/naemon/conf.d/
-cp /tmp/custom-naemon/src/naemon/timeperiods.cfg /etc/naemon/conf.d/
-cp /tmp/custom-naemon/src/naemon/24x7-nobackups.cfg /etc/naemon/conf.d/
-cp /tmp/custom-naemon/src/naemon/services.cfg /etc/naemon/conf.d/templates/
-cp /tmp/custom-naemon/src/naemon/templates.cfg /etc/naemon/conf.d/templates/
+cp /opt/custom-naemon/src/naemon/commands.cfg /etc/naemon/conf.d/
+cp /opt/custom-naemon/src/naemon/timeperiods.cfg /etc/naemon/conf.d/
+cp /opt/custom-naemon/src/naemon/24x7-nobackups.cfg /etc/naemon/conf.d/
+cp /opt/custom-naemon/src/naemon/services.cfg /etc/naemon/conf.d/templates/
+cp /opt/custom-naemon/src/naemon/templates.cfg /etc/naemon/conf.d/templates/
 
-cp /tmp/custom-naemon/src/thruk/* /etc/thruk
-cp /tmp/custom-naemon/src/okconfig/instance.cfg-example /etc/naemon/okconfig/examples/
+cp /opt/custom-naemon/src/thruk/* /etc/thruk
+cp /opt/custom-naemon/src/okconfig/instance.cfg-example /etc/naemon/okconfig/examples/
 
 mkdir -p /opt/sysmon-utils
 
-cp /tmp/custom-naemon/utils/sysmon-cli.py /opt/sysmon-utils/
+cp /opt/custom-naemon/utils/sysmon-cli.py /opt/sysmon-utils/
 
 # Initialize and verify okconfig
 echo "Initializing and verifying okconfig..."
