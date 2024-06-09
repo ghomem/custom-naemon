@@ -244,6 +244,7 @@ def modify_service(host_name, service_name):
     except Exception as e:
         print(f"\033[91mFailed to update instance file: {e}\033[0m")
         sys.exit(1)
+    restart_services()
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
