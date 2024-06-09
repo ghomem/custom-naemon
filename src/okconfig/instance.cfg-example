@@ -1,41 +1,41 @@
 # check template for typical instances
 
 define service {
-        use                     template_check_ssh_disk_root
+        use                     check_ssh_disk_root
         host_name               HOSTNAME
 }
 
 define service {
-        use                     template_check_ssh_load
+        use                     check_ssh_load
         host_name               HOSTNAME
 }
 
 define service {
-        use                     template_check_ssh_cpu
+        use                     check_ssh_cpu
         host_name               HOSTNAME
 }
 
 define service {
-        use                     template_check_ssh_bandwidth
+        use                     check_ssh_bandwidth
         host_name               HOSTNAME
 }
 
 define service {
-        use                     template_check_ssh_mem
+        use                     check_ssh_mem
         host_name               HOSTNAME
 }
 
 define service {
-        use                     template_check_puppet
+        use                     check_puppet
         host_name               HOSTNAME
 }
 
 define service {
-        use                     template_check_ssh_os_version
+        use                     check_ssh_os_version
         host_name               HOSTNAME
 }
 
 define service {
-        use                     template_check_ssh_reboot_required
+        use                     check_ssh_reboot_required
         host_name               HOSTNAME
 }
