@@ -32,7 +32,7 @@ def restart_services():
     for service in services:
         try:
             subprocess.run(f"sudo systemctl restart {service}", check=True, shell=True)
-        except subprocess.CalledProcessError ge:
+        except subprocess.CalledProcessError as ge:
             if service == "thruk":
                 try:
                     subprocess.run(f"sudo systemctl restart {service}", check=True, shell=True)
