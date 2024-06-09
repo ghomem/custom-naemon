@@ -105,14 +105,43 @@ cp /opt/custom-naemon/src/naemon/24x7-nobackups.cfg /etc/naemon/conf.d/
 cp /opt/custom-naemon/src/naemon/services.cfg /etc/naemon/conf.d/templates/
 cp /opt/custom-naemon/src/naemon/templates.cfg /etc/naemon/conf.d/templates/
 
+# Copy custom thruk and okconfig configurations
 cp /opt/custom-naemon/src/thruk/* /etc/thruk
 cp /opt/custom-naemon/src/okconfig/instance.cfg-example /etc/naemon/okconfig/examples/
 
+# Set up directory for our custom operations
 mkdir -p /opt/sysmon-utils
 
 cp /opt/custom-naemon/utils/sysmon-cli.py /opt/sysmon-utils/
 cp /opt/custom-naemon/utils/update-config.sh /opt/sysmon-utils/
 chmod a+x /opt/sysmon-utils/update-config.sh
+
+# Copy the logo image to be replaced in the web interface
+cp /opt/custom-naemon/utils/mdops.png /usr/share/thruk/themes/themes-available/Dark/images/
+cp /opt/custom-naemon/utils/mdops.png /usr/share/thruk/themes/themes-available/Light/images/
+chown root:root /usr/share/thruk/themes/themes-available/Dark/images/mdops.png
+chown root:root /usr/share/thruk/themes/themes-available/Light/images/mdops.png
+chmod 644 /usr/share/thruk/themes/themes-available/Dark/images/mdops.png
+chmod 644 /usr/share/thruk/themes/themes-available/Light/images/mdops.png
+
+# Replace the html code to use our custom logo images
+
+# Replace in templates/side.tt
+sed -i 's/logo_thruk_small.png/mdops.png/g' /usr/share/thruk/templates/side.tt
+sed -i 's/logo_thruk_small_icon.png/mdops.png/g' /usr/share/thruk/templates/side.tt
+
+# Replace in templates/broadcast_edit.tt
+sed -i 's/logo_thruk.png/mdops.png/g' /usr/share/thruk/templates/broadcast_edit.tt
+
+# Replace in templates/theme_preview.tt
+sed -i 's/logo_thruk_small.png/mdops.png/g' /usr/share/thruk/templates/theme_preview.tt
+sed -i 's/logo_thruk.png/mdops.png/g' /usr/share/thruk/templates/theme_preview.tt
+
+# Replace in templates/main_legacy.tt
+sed -i 's/logo_thruk.png/mdops.png/g' /usr/share/thruk/templates/main_legacy.tt
+
+# Replace in templates/login.tt
+sed -i 's/logo_thruk.png/mdops.png/g' /usr/share/thruk/templates/login.tt
 
 # Initialize and verify okconfig
 echo "Initializing and verifying okconfig..."
