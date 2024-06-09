@@ -32,7 +32,7 @@ def restart_services():
     for service in services:
         try:
             subprocess.run(f"sudo systemctl restart {service}", check=True, shell=True)
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError ge:
             if service == "thruk":
                 try:
                     subprocess.run(f"sudo systemctl restart {service}", check=True, shell=True)
@@ -40,7 +40,7 @@ def restart_services():
                     print(f"\033[91mFailed to restart {service} service twice: {e}\033[0m")
                     sys.exit(1)
             else:
-                print(f"\033[91mFailed to restart {service} service: {e}\033[0m")
+                print(f"\033[91mFailed to restart {service} service: {ge}\033[0m")
                 sys.exit(1)
 
 def add_host(host_name, address, template=None):
