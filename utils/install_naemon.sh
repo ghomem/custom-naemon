@@ -111,6 +111,8 @@ cp /opt/custom-naemon/src/okconfig/instance.cfg-example /etc/naemon/okconfig/exa
 mkdir -p /opt/sysmon-utils
 
 cp /opt/custom-naemon/utils/sysmon-cli.py /opt/sysmon-utils/
+cp /opt/custom-naemon/utils/update-config.sh /opt/sysmon-utils/
+chmod a+x /opt/sysmon-utils/update-config.sh
 
 # Initialize and verify okconfig
 echo "Initializing and verifying okconfig..."

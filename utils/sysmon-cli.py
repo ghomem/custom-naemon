@@ -5,16 +5,16 @@ import re
 
 def print_usage():
     usage = """
-    Usage:
-        sudo python /opt/sysmon-utils/sysmon-cli.py addhost <host_name> --address <hostname_or_ip> [--template <template_name>]
-        sudo python /opt/sysmon-utils/sysmon-cli.py removehost <host_name>
-        sudo python /opt/sysmon-utils/sysmon-cli.py listhosts
-        sudo python /opt/sysmon-utils/sysmon-cli.py addtemplate <host_name> --template <template_name>
-        sudo python /opt/sysmon-utils/sysmon-cli.py addservice <host_name> --service <service_template>
-        sudo python /opt/sysmon-utils/sysmon-cli.py listservices <host_name>
-        sudo python /opt/sysmon-utils/sysmon-cli.py removeservice <host_name> --service <service_name>
-        sudo python /opt/sysmon-utils/sysmon-cli.py modifyservice <host_name> --service <service_name>
-        sudo python /opt/sysmon-utils/sysmon-cli.py allservices [--details]
+    \033[94mUsage:\033[0m
+        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92madd-host\033[0m <host_name> --address <hostname_or_ip> [--template <template_name>]
+        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mremove-host\033[0m <host_name>
+        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mlist-hosts\033[0m
+        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92madd-template\033[0m <host_name> --template <template_name>
+        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92madd-service\033[0m <host_name> --service <service_template>
+        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mlist-host-services\033[0m <host_name>
+        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mremove-service\033[0m <host_name> --service <service_name>
+        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mmodify-service\033[0m <host_name> --service <service_name>
+        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mlist-available-services\033[0m [--details]
     """
     print(usage)
 
@@ -24,7 +24,7 @@ def execute_command(command):
         # Preserve environment variables, especially PATH
         subprocess.run(command, check=True, shell=True, env=env)
     except subprocess.CalledProcessError as e:
-        print(f"Command failed: {e}")
+        print(f"\033[91mCommand failed: {e}\033[0m")
         sys.exit(1)
 
 def restart_services():
@@ -37,10 +37,10 @@ def restart_services():
                 try:
                     subprocess.run(f"sudo systemctl restart {service}", check=True, shell=True)
                 except subprocess.CalledProcessError as e:
-                    print(f"Failed to restart {service} service twice: {e}")
+                    print(f"\033[91mFailed to restart {service} service twice: {e}\033[0m")
                     sys.exit(1)
             else:
-                print(f"Failed to restart {service} service: {e}")
+                print(f"\033[91mFailed to restart {service} service: {e}\033[0m")
                 sys.exit(1)
 
 def add_host(host_name, address, template=None):
@@ -61,13 +61,13 @@ def list_hosts():
         result = subprocess.run("sudo pynag list host_name address WHERE object_type=host | egrep -v '^null'", 
                                 shell=True, check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
-        print(f"Command failed: {e}")
+        print(f"\033[91mCommand failed: {e}\033[0m")
         sys.exit(1)
 
     lines = result.stdout.strip().split('\n')
     # Print the header
-    print(f"{'host_name':<20} {'address':<20} {'host_definition_file':<60} {'service_definition_file':<60}")
-    print('-' * 140)
+    print(f"\033[94m{'host_name':<20} {'address':<20} {'host_definition_file':<60} {'service_definition_file':<60}\033[0m")
+    print('\033[90m' + '-' * 140 + '\033[0m')
     
     for line in lines:
         if "---" in line or "host_name" in line:
@@ -78,9 +78,9 @@ def list_hosts():
             address = parts[1]
             host_def_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-host.cfg"
             service_def_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg"
-            print(f"{host_name:<20} {address:<20} {host_def_file:<60} {service_def_file:<60}")
+            print(f"\033[92m{host_name:<20} {address:<20} {host_def_file:<60} {service_def_file:<60}\033[0m")
     
-    print(f"{'-' * 140}")
+    print('\033[90m' + '-' * 140 + '\033[0m')
 
 def add_template(host_name, template_name):
     execute_command(f"sudo PYTHONPATH=$PYTHONPATH:/opt/okconfig okconfig addtemplate {host_name} --template {template_name} --force")
@@ -92,8 +92,8 @@ def add_service(host_name, service_template):
 
 def list_services(host_name):
     execute_command(f"sudo pynag list host_name use WHERE object_type=service and host_name={host_name}")
-    print (f"The host is defined in /etc/naemon/okconfig/hosts/default/{host_name}-host.cfg")
-    print (f"The host services are defined in /etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg")
+    print(f"\033[92mThe host is defined in /etc/naemon/okconfig/hosts/default/{host_name}-host.cfg\033[0m")
+    print(f"\033[92mThe host services are defined in /etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg\033[0m")
 
 def remove_service(host_name, service_name):
     execute_command(f"sudo pynag delete where object_type=service and host_name={host_name} and use={service_name}")
@@ -133,6 +133,7 @@ def all_services(details=False):
                     print(f"  \033[93m{var:<25}\033[0m : \033[92m{value}\033[0m")
             else:
                 print("  \033[91mNo custom variables defined.\033[0m")
+
 def get_service_custom_vars(service_name):
     try:
         with open("/etc/naemon/conf.d/templates/services.cfg", "r") as f:
@@ -252,7 +253,7 @@ if __name__ == "__main__":
     command = sys.argv[1]
 
     try:
-        if command == "addhost":
+        if command == "add-host":
             if len(sys.argv) >= 5 and "--address" in sys.argv:
                 host_name = sys.argv[2]
                 address_index = sys.argv.index("--address")
@@ -265,21 +266,21 @@ if __name__ == "__main__":
             else:
                 print_usage()
                 sys.exit(1)
-        elif command == "removehost" and len(sys.argv) == 3:
+        elif command == "remove-host" and len(sys.argv) == 3:
             remove_host(sys.argv[2])
-        elif command == "listhosts" and len(sys.argv) == 2:
+        elif command == "list-hosts" and len(sys.argv) == 2:
             list_hosts()
-        elif command == "addtemplate" and len(sys.argv) == 5 and sys.argv[3] == "--template":
+        elif command == "add-template" and len(sys.argv) == 5 and sys.argv[3] == "--template":
             add_template(sys.argv[2], sys.argv[4])
-        elif command == "addservice" and len(sys.argv) == 5 and sys.argv[3] == "--service":
+        elif command == "add-service" and len(sys.argv) == 5 and sys.argv[3] == "--service":
             add_service(sys.argv[2], sys.argv[4])
-        elif command == "listservices" and len(sys.argv) == 3:
+        elif command == "list-host-services" and len(sys.argv) == 3:
             list_services(sys.argv[2])
-        elif command == "removeservice" and len(sys.argv) == 5 and sys.argv[3] == "--service":
+        elif command == "remove-service" and len(sys.argv) == 5 and sys.argv[3] == "--service":
             remove_service(sys.argv[2], sys.argv[4])
-        elif command == "modifyservice" and len(sys.argv) == 5 and sys.argv[3] == "--service":
+        elif command == "modify-service" and len(sys.argv) == 5 and sys.argv[3] == "--service":
             modify_service(sys.argv[2], sys.argv[4])
-        elif command == "allservices" and len(sys.argv) in [2, 3] and (len(sys.argv) == 2 or sys.argv[2] == "--details"):
+        elif command == "list-available-services" and len(sys.argv) in [2, 3] and (len(sys.argv) == 2 or sys.argv[2] == "--details"):
             details = "--details" in sys.argv
             all_services(details)
         else:
@@ -288,3 +289,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\033[91mAn error occurred: {e}\033[0m")
         sys.exit(1)
+
