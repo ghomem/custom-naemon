@@ -105,18 +105,18 @@ cp /opt/custom-naemon/src/naemon/24x7-nobackups.cfg /etc/naemon/conf.d/
 cp /opt/custom-naemon/src/naemon/services.cfg /etc/naemon/conf.d/templates/
 cp /opt/custom-naemon/src/naemon/templates.cfg /etc/naemon/conf.d/templates/
 
-# Copy the slack notification configs to the naemon directory
-cp /opt/custom-naemon/src/slack/notification_slack.sh /opt/sysmon-utils/
-cp /opt/custom-naemon/src/slack/slack.cfg /etc/naemon/conf.d/
-chmod a+x /opt/sysmon-utils/notification_slack.sh
-chmod 664 /etc/naemon/conf.d/slack.cfg
-
 # Copy custom thruk and okconfig configurations
 cp /opt/custom-naemon/src/thruk/* /etc/thruk
 cp /opt/custom-naemon/src/okconfig/instance.cfg-example /etc/naemon/okconfig/examples/
 
 # Set up directory for our custom operations
 mkdir -p /opt/sysmon-utils
+
+# Copy the slack notification configs to the naemon directory
+cp /opt/custom-naemon/src/slack/notification_slack.sh /opt/sysmon-utils/
+cp /opt/custom-naemon/src/slack/slack.cfg /etc/naemon/conf.d/
+chmod a+x /opt/sysmon-utils/notification_slack.sh
+chmod 664 /etc/naemon/conf.d/slack.cfg
 
 cp /opt/custom-naemon/utils/sysmon-cli.py /opt/sysmon-utils/
 cp /opt/custom-naemon/utils/update-config.sh /opt/sysmon-utils/
