@@ -95,7 +95,7 @@ cd /opt
 git clone https://github.com/ghomem/custom-naemon.git
 chmod -R 664 /opt/custom-naemon/
 chown -R naemon:naemon /opt/custom-naemon/src/naemon/
-sed -i 's|^service_check_timeout=60|service_check_timeout=600|' /etc/naemon/naemon.conf
+sed -i 's|^service_check_timeout=60|service_check_timeout=600|' /etc/naemon/naemon.cfg
 
 # Copy custom configurations to Naemon directory
 echo "Copying custom configurations to Naemon directory..."
