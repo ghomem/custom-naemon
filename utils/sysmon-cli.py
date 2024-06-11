@@ -6,15 +6,15 @@ import re
 def print_usage():
     usage = """
     \033[94mUsage:\033[0m
-        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92madd-host\033[0m <host_name> --address <hostname_or_ip> [--template <template_name>]
-        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mremove-host\033[0m <host_name>
-        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mlist-hosts\033[0m
-        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92madd-template\033[0m <host_name> --template <template_name>
-        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92madd-service\033[0m <host_name> --service <service_template>
-        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mlist-host-services\033[0m <host_name>
-        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mremove-service\033[0m <host_name> --service <service_name>
-        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mmodify-service\033[0m <host_name> --service <service_name>
-        sudo python /opt/sysmon-utils/sysmon-cli.py \033[92mlist-available-services\033[0m [--details]
+        sysmon-cli \033[92madd-host\033[0m <host_name> --address <hostname_or_ip> [--template <template_name>]
+        sysmon-cli \033[92mremove-host\033[0m <host_name>
+        sysmon-cli \033[92mlist-hosts\033[0m
+        sysmon-cli \033[92madd-template\033[0m <host_name> --template <template_name>
+        sysmon-cli \033[92madd-service\033[0m <host_name> --service <service_template>
+        sysmon-cli \033[92mlist-host-services\033[0m <host_name>
+        sysmon-cli \033[92mremove-service\033[0m <host_name> --service <service_name>
+        sysmon-cli \033[92mmodify-service\033[0m <host_name> --service <service_name>
+        sysmon-cli \033[92mlist-available-services\033[0m [--details]
     """
     print(usage)
 

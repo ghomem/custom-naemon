@@ -154,6 +154,11 @@ echo "Initializing and verifying okconfig..."
 okconfig init
 okconfig verify
 
+# Create alias for the wrapper
+cp -f /opt/custom-naemon/utils/sysmon-cli.sh /etc/profile.d/
+chown root:root /etc/profile.d/sysmon-cli.sh
+source /etc/profile.d/sysmon-cli.sh
+
 # Remove unnecessary default configuration files
 echo "Removing unnecessary default configuration files..."
 cd /etc/naemon/conf.d
