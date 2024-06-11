@@ -43,6 +43,26 @@ def restart_services():
                 print(f"\033[91mFailed to restart {service} service: {ge}\033[0m")
                 sys.exit(1)
 
+def host_exists(host_name):
+    try:
+        result = subprocess.run(f"sudo pynag list host_name WHERE object_type=host and host_name={host_name}",
+                                shell=True, check=True, capture_output=True, text=True)
+        return host_name in result.stdout
+    except subprocess.CalledProcessError:
+        return False
+
+def service_template_exists(service_template):
+    try:
+        result = subprocess.run("grep name /etc/naemon/conf.d/templates/services.cfg | awk '{ print $2 }' | sort",
+                                shell=True, check=True, capture_output=True, text=True)
+        return service_template in result.stdout.split()
+    except subprocess.CalledProcessError:
+        return False
+
+def template_exists(template_name):
+    template_path = f"/etc/naemon/okconfig/examples/{template_name}.cfg-example"
+    return os.path.isfile(template_path)
+
 def add_host(host_name, address, template=None):
     command = f"sudo PYTHONPATH=$PYTHONPATH:/opt/okconfig okconfig addhost {host_name}"
     if template:
@@ -83,10 +103,25 @@ def list_hosts():
     print('\033[90m' + '-' * 140 + '\033[0m')
 
 def add_template(host_name, template_name):
+    if not host_exists(host_name):
+        print(f"\033[91mHost '{host_name}' does not exist.\033[0m")
+        return
+    if not template_exists(template_name):
+        print(f"\033[91mTemplate '{template_name}' does not exist.\033[0m")
+        return
+
     execute_command(f"sudo PYTHONPATH=$PYTHONPATH:/opt/okconfig okconfig addtemplate {host_name} --template {template_name} --force")
     restart_services()
 
 def add_service(host_name, service_template):
+    if not host_exists(host_name):
+        print(f"\033[91mHost '{host_name}' does not exist.\033[0m")
+        return
+
+    if not service_template_exists(service_template):
+        print(f"\033[91mService template '{service_template}' does not exist.\033[0m")
+        return
+
     execute_command(f'sudo pynag add service use="{service_template}" host_name={host_name} --filename=/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg')
     restart_services()
 
