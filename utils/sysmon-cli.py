@@ -10,7 +10,7 @@ def print_usage():
         sysmon-cli \033[92mremove-host\033[0m <host_name>
         sysmon-cli \033[92mlist-hosts\033[0m
         sysmon-cli \033[92madd-template\033[0m <host_name> --template <template_name>
-        sysmon-cli \033[92madd-service\033[0m <host_name> --service <service_template>
+        sysmon-cli \033[92madd-service\033[0m <host_name> --service <service_template> [--description <description>]
         sysmon-cli \033[92mlist-host-services\033[0m <host_name>
         sysmon-cli \033[92mremove-service\033[0m <host_name> --service <service_name>
         sysmon-cli \033[92mmodify-service\033[0m <host_name> --service <service_name>
@@ -113,7 +113,7 @@ def add_template(host_name, template_name):
     execute_command(f"sudo PYTHONPATH=$PYTHONPATH:/opt/okconfig okconfig addtemplate {host_name} --template {template_name} --force")
     restart_services()
 
-def add_service(host_name, service_template):
+def add_service(host_name, service_template, description=None):
     if not host_exists(host_name):
         print(f"\033[91mHost '{host_name}' does not exist.\033[0m")
         return
@@ -122,16 +122,93 @@ def add_service(host_name, service_template):
         print(f"\033[91mService template '{service_template}' does not exist.\033[0m")
         return
 
-    execute_command(f'sudo pynag add service use="{service_template}" host_name={host_name} --filename=/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg')
+    service_command = f'sudo pynag add service use="{service_template}" host_name={host_name} --filename=/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg'
+    execute_command(service_command)
+
+    if description:
+        instance_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg"
+        add_description_to_service(instance_file, service_template, description)
+
     restart_services()
+
+def add_description_to_service(instance_file, service_name, description):
+    try:
+        with open(instance_file, "r") as f:
+            content = f.read()
+    except FileNotFoundError as e:
+        print(f"\033[91mInstance file not found: {e}\033[0m")
+        return
+
+    service_blocks = content.split("define service {")
+    updated_content = [service_blocks[0]]  # Start with the initial content before the first service block
+
+    for block in service_blocks[1:]:
+        lines = block.split("\n")
+        if any(re.match(rf'\s*use\s+{service_name}', line) for line in lines):
+            for i, line in enumerate(lines):
+                if line.strip().startswith("use"):
+                    lines.insert(i + 1, f"         service_description {description}")
+                    break
+            updated_content.append("define service {\n" + "\n".join(lines) + "\n")
+        else:
+            updated_content.append("define service {\n" + "\n".join(lines) + "\n")
+
+    try:
+        with open(instance_file, "w") as f:
+            f.write("\n".join(updated_content))
+        print("\033[92mDescription added successfully.\033[0m")
+    except Exception as e:
+        print(f"\033[91mFailed to update instance file: {e}\033[0m")
+        sys.exit(1)
 
 def list_services(host_name):
     execute_command(f"sudo pynag list host_name use WHERE object_type=service and host_name={host_name}")
     print(f"\033[92mThe host is defined in /etc/naemon/okconfig/hosts/default/{host_name}-host.cfg\033[0m")
     print(f"\033[92mThe host services are defined in /etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg\033[0m")
 
+def list_services_to_remove(host_name, service_name):
+    command = f"sudo pynag list where object_type=service and host_name={host_name} and use={service_name}"
+    process = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if process.returncode != 0:
+        print(f"\033[91mError: {process.stderr}\033[0m")
+    output = process.stdout
+    services = []
+    for line in output.splitlines():
+        if line.startswith("service"):
+            parts = line.split()
+            shortname = " ".join(parts[1:-1])
+            services.append(shortname)
+    return services
+
 def remove_service(host_name, service_name):
-    execute_command(f"sudo pynag delete where object_type=service and host_name={host_name} and use={service_name}")
+    services = list_services_to_remove(host_name, service_name)
+    if not services:
+        print(f"\033[91mNo services found for host {host_name} with use {service_name}.\033[0m")
+        return
+    elif len(services) == 1:
+        shortname = services[0]
+        execute_command(f"sudo pynag delete where object_type=service and host_name={host_name} and use={service_name} and shortname='{shortname}'")
+        print(f"\033[92mService '{shortname}' has been successfully removed.\033[0m")
+    else:
+        print(f"\033[93m{len(services)} services found for host {host_name} with use {service_name}:\033[0m")
+        for idx, shortname in enumerate(services, start=1):
+            print(f"\033[94m{idx}. {shortname}\033[0m")
+        choice = input("\033[93mType the number of the service you wish to remove or 'all' to delete all services: \033[0m")
+        if choice.lower() == 'all':
+            for shortname in services:
+                execute_command(f"sudo pynag delete where object_type=service and host_name={host_name} and use={service_name} and shortname='{shortname}'")
+            print(f"\033[92mAll services have been successfully removed.\033[0m")
+        else:
+            try:
+                idx = int(choice) - 1
+                if 0 <= idx < len(services):
+                    shortname = services[idx]
+                    execute_command(f"sudo pynag delete where object_type=service and host_name={host_name} and use={service_name} and shortname='{shortname}'")
+                    print(f"\033[92mService '{shortname}' has been successfully removed.\033[0m")
+                else:
+                    print("\033[91mInvalid choice. No services were deleted.\033[0m")
+            except ValueError:
+                print("\033[91mInvalid input. No services were deleted.\033[0m")
     restart_services()
 
 def all_services(details=False):
@@ -226,6 +303,7 @@ def modify_service(host_name, service_name):
     print(f"\033[92mAvailable custom variables:\033[0m")
     for var in service_vars:
         print(f"\033[93m{var}\033[0m")
+    print(f"\033[93mservice_description\033[0m")
 
     # Interactive prompt
     modified_vars = {}
@@ -235,8 +313,9 @@ def modify_service(host_name, service_name):
         if var.lower() == "exit":
             break
         if var not in service_vars:
-            print("\033[91mThe custom variable does not exist.\033[0m")
-            continue
+            if var.lower() != "service_description":
+                print("\033[91mThe custom variable does not exist.\033[0m")
+                continue
         value = input(f"Enter the value for {var}: ").strip()
         if var.endswith("_THRESHOLD") or var.endswith("_PORT") or var == "__TCP_PORT":
             if not value.isdigit():
@@ -290,33 +369,53 @@ if __name__ == "__main__":
 
     try:
         if command == "add-host":
-            if len(sys.argv) >= 5 and "--address" in sys.argv:
-                host_name = sys.argv[2]
-                address_index = sys.argv.index("--address")
-                address = sys.argv[address_index + 1]
-                template = None
-                if "--template" in sys.argv:
-                    template_index = sys.argv.index("--template")
-                    template = sys.argv[template_index + 1]
-                add_host(host_name, address, template)
-            else:
+            if len(sys.argv) not in [5, 7]:
                 print_usage()
                 sys.exit(1)
+            if "--address" not in sys.argv:
+                print_usage()
+                sys.exit(1)
+            host_name = sys.argv[2]
+            address_index = sys.argv.index("--address")
+            address = sys.argv[address_index + 1]
+            template = None
+            if len(sys.argv) == 7:
+                if "--template" not in sys.argv:
+                    print_usage()
+                    sys.exit(1)
+                template_index = sys.argv.index("--template")
+                template = sys.argv[template_index + 1]
+            add_host(host_name, address, template)
         elif command == "remove-host" and len(sys.argv) == 3:
             remove_host(sys.argv[2])
         elif command == "list-hosts" and len(sys.argv) == 2:
             list_hosts()
         elif command == "add-template" and len(sys.argv) == 5 and sys.argv[3] == "--template":
             add_template(sys.argv[2], sys.argv[4])
-        elif command == "add-service" and len(sys.argv) == 5 and sys.argv[3] == "--service":
-            add_service(sys.argv[2], sys.argv[4])
+        elif command == "add-service":
+            if len(sys.argv) not in [5, 7]:
+                print_usage()
+                sys.exit(1)
+            if sys.argv[3] != "--service":
+                print_usage()
+                sys.exit(1)
+            host_name = sys.argv[2]
+            service_template = sys.argv[4]
+            description = None
+            if len(sys.argv) == 7:
+                if "--description" not in sys.argv:
+                    print_usage()
+                    sys.exit(1)
+                description_index = sys.argv.index("--description")
+                description = sys.argv[description_index + 1]
+            add_service(host_name, service_template, description)
         elif command == "list-host-services" and len(sys.argv) == 3:
             list_services(sys.argv[2])
         elif command == "remove-service" and len(sys.argv) == 5 and sys.argv[3] == "--service":
             remove_service(sys.argv[2], sys.argv[4])
         elif command == "modify-service" and len(sys.argv) == 5 and sys.argv[3] == "--service":
             modify_service(sys.argv[2], sys.argv[4])
-        elif command == "list-available-services" and len(sys.argv) in [2, 3] and (len(sys.argv) == 2 or sys.argv[2] == "--details"):
+        elif command == "list-available-services" and (len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2] == "--details")):
             details = "--details" in sys.argv
             all_services(details)
         else:
@@ -325,4 +424,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\033[91mAn error occurred: {e}\033[0m")
         sys.exit(1)
-
