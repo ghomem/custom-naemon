@@ -122,44 +122,51 @@ def add_service(host_name, service_template, description=None):
         print(f"\033[91mService template '{service_template}' does not exist.\033[0m")
         return
 
-    service_command = f'sudo pynag add service use="{service_template}" host_name={host_name} --filename=/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg'
-    execute_command(service_command)
+    instance_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg"
 
-    if description:
-        instance_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg"
-        add_description_to_service(instance_file, service_template, description)
+    # Check for existing services with the same use and description
+    existing_services = check_existing_services(instance_file, service_template, description)
 
-    restart_services()
-
-def add_description_to_service(instance_file, service_name, description):
-    try:
-        with open(instance_file, "r") as f:
-            content = f.read()
-    except FileNotFoundError as e:
-        print(f"\033[91mInstance file not found: {e}\033[0m")
+    if existing_services:
+        if description:
+            print(f"\033[91mA service with use '{service_template}' and description '{description}' already exists.\033[0m")
+        else:
+            print(f"\033[91mA service with use '{service_template}' and default description already exists.\033[0m")
+        print("Please add the new service with a different --description to avoid conflicts.")
         return
 
-    service_blocks = content.split("define service {")
-    updated_content = [service_blocks[0]]  # Start with the initial content before the first service block
+    if description:
+        service_command = f'sudo pynag add service use="{service_template}" host_name={host_name} service_description="{description}" --filename={instance_file}'
+    else:
+        service_command = f'sudo pynag add service use="{service_template}" host_name={host_name} --filename={instance_file}'
 
-    for block in service_blocks[1:]:
-        lines = block.split("\n")
-        if any(re.match(rf'\s*use\s+{service_name}', line) for line in lines):
-            for i, line in enumerate(lines):
-                if line.strip().startswith("use"):
-                    lines.insert(i + 1, f"         service_description {description}")
-                    break
-            updated_content.append("define service {\n" + "\n".join(lines) + "\n")
-        else:
-            updated_content.append("define service {\n" + "\n".join(lines) + "\n")
+    execute_command(service_command)
+    restart_services()
 
+def check_existing_services(file_path, service_template, description=None):
     try:
-        with open(instance_file, "w") as f:
-            f.write("\n".join(updated_content))
-        print("\033[92mDescription added successfully.\033[0m")
-    except Exception as e:
-        print(f"\033[91mFailed to update instance file: {e}\033[0m")
-        sys.exit(1)
+        with open(file_path, "r") as f:
+            content = f.read()
+
+        service_blocks = content.split("define service {")
+        for block in service_blocks[1:]:
+            lines = block.strip().split('\n')
+            use_match = any(line.strip().startswith(f"use") and service_template in line for line in lines)
+
+            if use_match:
+                if description:
+                    # Check for exact description match
+                    if any(line.strip().startswith("service_description") and description in line for line in lines):
+                        return True
+                else:
+                    # Check if no explicit description is set
+                    if not any(line.strip().startswith("service_description") for line in lines):
+                        return True
+
+        return False
+    except FileNotFoundError:
+        print(f"\033[91mInstance file not found: {file_path}\033[0m")
+        return False
 
 def list_services(host_name):
     execute_command(f"sudo pynag list host_name use WHERE object_type=service and host_name={host_name}")
@@ -246,29 +253,6 @@ def all_services(details=False):
             else:
                 print("  \033[91mNo custom variables defined.\033[0m")
 
-def get_service_custom_vars(service_name):
-    try:
-        with open("/etc/naemon/conf.d/templates/services.cfg", "r") as f:
-            content = f.read()
-    except FileNotFoundError as e:
-        print(f"\033[91mFile not found: {e}\033[0m")
-        sys.exit(1)
-
-    service_blocks = content.split("define service {")
-    for block in service_blocks[1:]:
-        lines = block.strip().split("\n")
-        for line in lines:
-            if re.match(rf'\s*name\s+{service_name}', line):
-                custom_vars = {}
-                for line in lines:
-                    if line.strip().startswith("__"):
-                        parts = line.split(None, 1)
-                        if len(parts) == 2:
-                            var, value = parts
-                            custom_vars[var.strip()] = value.strip()
-                return custom_vars
-    return {}
-
 def service_exists_in_host(instance_file, service_name):
     try:
         with open(instance_file, "r") as f:
@@ -288,10 +272,48 @@ def service_exists_in_host(instance_file, service_name):
 def modify_service(host_name, service_name):
     instance_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg"
 
-    # Check if the service exists for the given host
-    if not service_exists_in_host(instance_file, service_name):
+    try:
+        with open(instance_file, "r") as f:
+            content = f.read()
+    except FileNotFoundError as e:
+        print(f"\033[91mInstance file not found: {e}\033[0m")
+        return
+
+    service_blocks = content.split("define service {")
+    matching_blocks = []
+
+    for i, block in enumerate(service_blocks[1:], start=1):
+        lines = block.strip().split('\n')
+        if any(re.match(rf'\s*use\s+{service_name}', line) for line in lines):
+            service_description = next((line.split('service_description', 1)[1].strip() for line in lines if line.strip().startswith('service_description')), f"Service with default description")
+            matching_blocks.append((i, block, service_description))
+
+    if not matching_blocks:
         print(f"\033[91mThe given service is not defined for the given host.\033[0m")
         return
+
+    # Add numbered comments to matching blocks
+    for i, (index, block, description) in enumerate(matching_blocks, start=1):
+        service_blocks[index] = f"# Service {i}\n" + block
+
+    # If multiple services are found, let the user choose one
+    if len(matching_blocks) > 1:
+        print(f"\033[93m{len(matching_blocks)} services found for host {host_name} with use {service_name}:\033[0m")
+        for i, (_, _, description) in enumerate(matching_blocks, start=1):
+            print(f"\033[94m{i}. {description}\033[0m")
+        choice = input("\033[93mType the number of the service you wish to modify: \033[0m")
+        try:
+            idx = int(choice) - 1
+            if 0 <= idx < len(matching_blocks):
+                selected_block_index = matching_blocks[idx][0]
+            else:
+                print("\033[91mInvalid choice. No service was modified.\033[0m")
+                return
+        except ValueError:
+            print("\033[91mInvalid input. No service was modified.\033[0m")
+            return
+    else:
+        selected_block_index = matching_blocks[0][0]
 
     # Get custom variables for the given service from the templates file
     service_vars = get_service_custom_vars(service_name)
@@ -317,48 +339,74 @@ def modify_service(host_name, service_name):
                 print("\033[91mThe custom variable does not exist.\033[0m")
                 continue
         value = input(f"Enter the value for {var}: ").strip()
-        if var.endswith("_THRESHOLD") or var.endswith("_PORT") or var == "__TCP_PORT":
+        if var.endswith("_THRESHOLD") or var.endswith("_PORT") or var == "__TCP_PORT" or "WARNING" in var or "CRITICAL" in var:
             if not value.isdigit():
                 print("\033[91mThe value must be an integer.\033[0m")
                 continue
         modified_vars[var] = value
 
-    # Update the instance file with modified variables
-    try:
-        with open(instance_file, "r") as f:
-            content = f.read()
-    except FileNotFoundError as e:
-        print(f"\033[91mInstance file not found: {e}\033[0m")
-        return
+    # Update the selected service block with modified variables
+    lines = service_blocks[selected_block_index].strip().split("\n")
+    for var, value in modified_vars.items():
+        found = False
+        for i, line in enumerate(lines):
+            if line.strip().startswith(var):
+                lines[i] = f"        {var} {value}"
+                found = True
+                break
+        if not found:
+            lines.insert(-1, f"        {var} {value}")  # Insert before the last line
 
-    service_blocks = content.split("define service {")
-    updated_content = [service_blocks[0]]  # Start with the initial content before the first service block
+    service_blocks[selected_block_index] = "\n".join(lines) + "\n"
 
-    for block in service_blocks[1:]:
-        lines = block.strip().split("\n")
-        if any(re.match(rf'\s*use\s+{service_name}', line) for line in lines):
-            for var, value in modified_vars.items():
-                found = False
-                for i, line in enumerate(lines):
-                    if line.strip().startswith(var):
-                        lines[i] = f"        {var} {value}"
-                        found = True
-                        break
-                if not found:
-                    lines.insert(-1, f"        {var} {value}")  # Insert before the last line
-            updated_content.append("define service {\n" + "\n".join(lines) + "\n")
-        else:
-            lines = [line if not re.match(r'\s*use\s+', line) else f"        {line.strip()}" for line in lines]
-            updated_content.append("define service {\n" + "\n".join(lines) + "\n")
-
+    # Write the updated content back to the file
     try:
         with open(instance_file, "w") as f:
-            f.write("\n".join(updated_content))
+            f.write("define service {".join(service_blocks))
         print("\033[92mService modified successfully.\033[0m")
     except Exception as e:
         print(f"\033[91mFailed to update instance file: {e}\033[0m")
-        sys.exit(1)
+        return
+
+    # Remove the added comments
+    remove_comments(instance_file)
     restart_services()
+
+def remove_comments(file_path):
+    try:
+        with open(file_path, "r") as f:
+            content = f.read()
+
+        # Remove the added comments
+        content = re.sub(r'# Service \d+\n', '', content)
+
+        with open(file_path, "w") as f:
+            f.write(content)
+    except Exception as e:
+        print(f"\033[91mFailed to remove comments: {e}\033[0m")
+
+def get_service_custom_vars(service_name):
+    try:
+        with open("/etc/naemon/conf.d/templates/services.cfg", "r") as f:
+            content = f.read()
+    except FileNotFoundError as e:
+        print(f"\033[91mFile not found: {e}\033[0m")
+        sys.exit(1)
+
+    service_blocks = content.split("define service {")
+    for block in service_blocks[1:]:
+        lines = block.strip().split("\n")
+        for line in lines:
+            if re.match(rf'\s*name\s+{service_name}', line):
+                custom_vars = {}
+                for line in lines:
+                    if line.strip().startswith("__"):
+                        parts = line.split(None, 1)
+                        if len(parts) == 2:
+                            var, value = parts
+                            custom_vars[var.strip()] = value.strip()
+                return custom_vars
+    return {}
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
