@@ -67,13 +67,15 @@ def add_host(host_name, address, template=None):
     command = f"sudo PYTHONPATH=$PYTHONPATH:/opt/okconfig okconfig addhost {host_name}"
     if template:
         command += f" --template {template}"
-    command += f" --address {address} --force"
+    command += f" --address {address}"
     execute_command(command)
     restart_services()
 
 def remove_host(host_name):
     execute_command(f"sudo pynag delete where object_type=service and host_name={host_name}")
     execute_command(f"sudo pynag delete where object_type=host and host_name={host_name}")
+    execute_command(f"rm -f /etc/naemon/okconfig/hosts/default/{host_name}-host.cfg")
+    execute_command(f"rm -f /etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg")
     restart_services()
 
 def list_hosts():
