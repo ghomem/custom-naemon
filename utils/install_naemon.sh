@@ -3,6 +3,7 @@
 set -e
 
 FQDN=$1
+SLACKWEBHOOK=$2
 
 # Function to handle errors gracefully
 handle_error() {
@@ -117,6 +118,9 @@ cp /opt/custom-naemon/src/slack/notification_slack.sh /opt/sysmon-utils/
 cp /opt/custom-naemon/src/slack/slack.cfg /etc/naemon/conf.d/
 chmod a+x /opt/sysmon-utils/notification_slack.sh
 chmod 664 /etc/naemon/conf.d/slack.cfg
+
+sed -i "s|^PLACEHOLDER1|${SLACKWEBHOOK}|" /etc/naemon/conf.d/slack.cfg
+sed -i "s|^PLACEHOLDER2|${SLACKWEBHOOK}|" /etc/naemon/conf.d/slack.cfg
 
 cp /opt/custom-naemon/utils/sysmon-cli.py /opt/sysmon-utils/
 cp /opt/custom-naemon/utils/update-config.sh /opt/sysmon-utils/
