@@ -96,7 +96,6 @@ cd /opt
 git clone https://github.com/ghomem/custom-naemon.git
 chmod -R 664 /opt/custom-naemon/
 chown -R naemon:naemon /opt/custom-naemon/src/naemon/
-sed -i 's|^service_check_timeout=60|service_check_timeout=600|' /etc/naemon/naemon.cfg
 
 # Copy custom configurations to Naemon directory
 echo "Copying custom configurations to Naemon directory..."
@@ -105,6 +104,9 @@ cp /opt/custom-naemon/src/naemon/timeperiods.cfg /etc/naemon/conf.d/
 cp /opt/custom-naemon/src/naemon/24x7-nobackups.cfg /etc/naemon/conf.d/
 cp /opt/custom-naemon/src/naemon/services.cfg /etc/naemon/conf.d/templates/
 cp /opt/custom-naemon/src/naemon/templates.cfg /etc/naemon/conf.d/templates/
+cp /opt/custom-naemon/src/naemon/naemon.cfg /etc/naemon/
+chown naemon:naemon /etc/naemon/naemon.cfg
+chmod 644 /etc/naemon/naemon.cfg
 
 # Copy custom thruk and okconfig configurations
 cp /opt/custom-naemon/src/thruk/* /etc/thruk
@@ -168,6 +170,36 @@ echo "Removing unnecessary default configuration files..."
 cd /etc/naemon/conf.d
 rm -f printer.cfg switch.cfg windows.cfg
 rm -f templates/hosts.cfg templates/contacts.cfg
+
+# Install PNP4Nagios
+
+cd /opt
+git clone https://github.com/pnp4nagios/pnp4nagios.git
+cd pnp4nagios/
+sudo apt-get install -y autoconf gcc libc6 libmcrypt-dev make libgd-dev libssl-dev apache2 libapache2-mod-php php-gd php-pear rrdtool librrds-perl nagios-plugins-contrib git
+sudo apt install -y git build-essential autoconf automake libtool pkg-config apache2 rrdtool librrd-dev php libapache2-mod-php
+sudo apt-get install php-xml php-gd php-snmp
+./configure --with-nagios-user=naemon --with-nagios-group=naemon --with-httpd-conf=/etc/apache2/conf-available
+mkdir /etc/nagios
+ln -s /etc/naemon/naemon.cfg /etc/nagios/nagios.cfg
+make all
+make install
+make fullinstall
+cp /usr/local/pnp4nagios/etc/config_samples/http_server_apache/pnp4nagios.conf /etc/apache2/conf-available/
+cp /usr/share/thruk/thruk_cookie_auth.include /etc/apache2/conf-available/thruk_cookie_auth.include.conf
+sed -i 's/^\(\s*\)\(AuthName\|AuthType\|AuthUserFile\)/\1#\2/' /etc/apache2/conf-available/pnp4nagios.conf
+sed -i 's/Require valid-user/Require all granted/' /etc/apache2/conf-available/pnp4nagios.conf
+sed -i 's/^\(\s*RewriteCond %{REQUEST_URI} *\^\)\/thruk/\1\/(thruk|pnp4nagios)/' /etc/apache2/conf-available/pnp4nagios.conf
+cp /opt/custom-naemon/src/thruk/thruk_local.conf /etc/thruk/
+chown www-data:www-data /etc/thruk/thruk_local.conf
+chmod 644 /etc/thruk/thruk_local.conf
+systemctl enable npcd.service
+systemctl start npcd.service
+chown -R naemon:naemon /usr/local/pnp4nagios/var/spool/
+sed -i 's|^\(\$conf\['"'"'nagios_base'"'"'\] = "\)/nagios/cgi-bin";|\1/naemon/cgi-bin";|' /usr/local/pnp4nagios/etc/config.php
+a2enconf pnp4nagios
+a2enconf thruk_cookie_auth.include
+rm /usr/local/pnp4nagios/share/install.php
 
 systemctl enable naemon thruk apache2
 systemctl restart naemon
