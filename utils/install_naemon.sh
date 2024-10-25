@@ -178,7 +178,7 @@ git clone https://github.com/pnp4nagios/pnp4nagios.git
 cd pnp4nagios/
 sudo apt-get install -y autoconf gcc libc6 libmcrypt-dev make libgd-dev libssl-dev apache2 libapache2-mod-php php-gd php-pear rrdtool librrds-perl nagios-plugins-contrib git
 sudo apt install -y git build-essential autoconf automake libtool pkg-config apache2 rrdtool librrd-dev php libapache2-mod-php
-sudo apt-get install php-xml php-gd php-snmp
+sudo apt-get install -y php-xml php-gd php-snmp
 ./configure --with-nagios-user=naemon --with-nagios-group=naemon --with-httpd-conf=/etc/apache2/conf-available
 mkdir /etc/nagios
 ln -s /etc/naemon/naemon.cfg /etc/nagios/nagios.cfg
