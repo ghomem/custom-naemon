@@ -438,7 +438,7 @@ if __name__ == "__main__":
                     sys.exit(1)
             if "--address" not in sys.argv:
                 address = host_name
-            else
+            else:
                 address_index = sys.argv.index("--address")
                 address = sys.argv[address_index + 1]
             template = None
