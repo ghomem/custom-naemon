@@ -428,11 +428,11 @@ if __name__ == "__main__":
 
     try:
         if command == "add-host":
-            if len(sys.argv) not in [5, 7]:
+            if len(sys.argv) not in [3, 5, 7]:
                 print_usage()
                 sys.exit(1)
             host_name = sys.argv[2]
-            if len(sys.argv) >= 6:
+            if len(sys.argv) >= 5:
                 if "--address" not in sys.argv:
                     print_usage()
                     sys.exit(1)
