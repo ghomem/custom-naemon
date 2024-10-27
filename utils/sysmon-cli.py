@@ -328,7 +328,7 @@ def modify_service(host_name, service_name):
         return
 
     print(f"\033[92mAvailable custom variables:\033[0m")
-    variables_list = list(service_vars.keys()) + ['service_description']
+    variables_list = list(service_vars.keys()) + ['notifications_enabled'] + ['service_description']
     for i, var in enumerate(variables_list, start=1):
         print(f"\033[93m{i}. {var}\033[0m")
 
@@ -353,6 +353,10 @@ def modify_service(host_name, service_name):
         if var.endswith("_THRESHOLD") or var.endswith("_PORT") or var == "__TCP_PORT" or "WARNING" in var or "CRITICAL" in var:
             if not value.isdigit():
                 print("\033[91mThe value must be an integer.\033[0m")
+                continue
+        if var == "notifications_enabled"i:
+            if not value.isdigit() or value not in [0, 1]:
+                print("\033[91mThis variable takes only a boolean value [0 for notificattions off or 1 for notifications on]\033[0m")
                 continue
         modified_vars[var] = value
 
