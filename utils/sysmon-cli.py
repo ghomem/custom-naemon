@@ -356,7 +356,7 @@ def modify_service(host_name, service_name):
                 continue
         if var == "notifications_enabled":
             if not value.isdigit() or value not in [0, 1]:
-                print("\033[91mThis variable takes only a boolean value [0 for notificattions off or 1 for notifications on]\033[0m")
+                print("\033[91mThis variable takes only a boolean value [0 for notificattions off or 1 for notifications on].\033[0m")
                 continue
         modified_vars[var] = value
 
