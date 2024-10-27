@@ -432,22 +432,21 @@ if __name__ == "__main__":
                 print_usage()
                 sys.exit(1)
             host_name = sys.argv[2]
-            if len(sys.argv) >= 5:
-                if "--address" not in sys.argv:
-                    print_usage()
-                    sys.exit(1)
-            if "--address" not in sys.argv:
-                address = host_name
-            else:
-                address_index = sys.argv.index("--address")
-                address = sys.argv[address_index + 1]
+            address = host_name
             template = None
-            if len(sys.argv) == 7:
-                if "--template" not in sys.argv:
+            if len(sys.argv) >= 5:
+                if "--address" not in sys.argv and "--template" not in sys.argv:
                     print_usage()
                     sys.exit(1)
-                template_index = sys.argv.index("--template")
-                template = sys.argv[template_index + 1]
+                if len (sys.argv) == 7 and ("--address" not in sys.argv or "--template" not in sys.argv):
+                    print_usage()
+                    sys.exit(1)
+                if "--address" in sys.argv:
+                    address_index = sys.argv.index("--address")
+                    address = sys.argv[address_index + 1]
+                if "--template" in sys.argv:
+                    template_index = sys.argv.index("--template")
+                    template = sys.argv[template_index + 1]
             add_host(host_name, address, template)
         elif command == "remove-host" and len(sys.argv) == 3:
             remove_host(sys.argv[2])
