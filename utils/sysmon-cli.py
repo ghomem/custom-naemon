@@ -6,14 +6,14 @@ import re
 def print_usage():
     usage = """
     \033[94mUsage:\033[0m
-        sysmon-cli \033[92madd-host\033[0m <host_name> --address <hostname_or_ip> [--template <template_name>]
+        sysmon-cli \033[92madd-host\033[0m <host_name> [--address <hostname_or_ip> --template <template_name>]
         sysmon-cli \033[92mremove-host\033[0m <host_name>
         sysmon-cli \033[92mlist-hosts\033[0m
         sysmon-cli \033[92madd-template\033[0m <host_name> --template <template_name>
         sysmon-cli \033[92madd-service\033[0m <host_name> --service <service_template> [--description <description>]
-        sysmon-cli \033[92mlist-host-services\033[0m <host_name>
         sysmon-cli \033[92mremove-service\033[0m <host_name> --service <service_name>
         sysmon-cli \033[92mmodify-service\033[0m <host_name> --service <service_name>
+        sysmon-cli \033[92mlist-host-services\033[0m <host_name>
         sysmon-cli \033[92mlist-available-services\033[0m [--details]
     """
     print(usage)
@@ -287,7 +287,10 @@ def modify_service(host_name, service_name):
     for i, block in enumerate(service_blocks[1:], start=1):
         lines = block.strip().split('\n')
         if any(re.match(rf'\s*use\s+{service_name}', line) for line in lines):
-            service_description = next((line.split('service_description', 1)[1].strip() for line in lines if line.strip().startswith('service_description')), f"Service with default description")
+            service_description = next(
+                (line.split('service_description', 1)[1].strip() for line in lines if line.strip().startswith('service_description')),
+                "Service with default description"
+            )
             matching_blocks.append((i, block, service_description))
 
     if not matching_blocks:
@@ -325,21 +328,27 @@ def modify_service(host_name, service_name):
         return
 
     print(f"\033[92mAvailable custom variables:\033[0m")
-    for var in service_vars:
-        print(f"\033[93m{var}\033[0m")
-    print(f"\033[93mservice_description\033[0m")
+    variables_list = list(service_vars.keys()) + ['service_description']
+    for i, var in enumerate(variables_list, start=1):
+        print(f"\033[93m{i}. {var}\033[0m")
 
     # Interactive prompt
     modified_vars = {}
     print("\033[94mWhen you are done, please type Exit.\033[0m")
     while True:
-        var = input("Enter the custom variable to modify: ").strip()
-        if var.lower() == "exit":
+        var_input = input("Enter the number of the custom variable to modify: ").strip()
+        if var_input.lower() == "exit":
             break
-        if var not in service_vars:
-            if var.lower() != "service_description":
-                print("\033[91mThe custom variable does not exist.\033[0m")
+        try:
+            var_index = int(var_input) - 1
+            if 0 <= var_index < len(variables_list):
+                var = variables_list[var_index]
+            else:
+                print("\033[91mInvalid choice. Please select a number from the list.\033[0m")
                 continue
+        except ValueError:
+            print("\033[91mInvalid input. Please enter a number.\033[0m")
+            continue
         value = input(f"Enter the value for {var}: ").strip()
         if var.endswith("_THRESHOLD") or var.endswith("_PORT") or var == "__TCP_PORT" or "WARNING" in var or "CRITICAL" in var:
             if not value.isdigit():
@@ -422,12 +431,16 @@ if __name__ == "__main__":
             if len(sys.argv) not in [5, 7]:
                 print_usage()
                 sys.exit(1)
-            if "--address" not in sys.argv:
-                print_usage()
-                sys.exit(1)
             host_name = sys.argv[2]
-            address_index = sys.argv.index("--address")
-            address = sys.argv[address_index + 1]
+            if len(sys.argv) >= 6:
+                if "--address" not in sys.argv:
+                    print_usage()
+                    sys.exit(1)
+            if "--address" not in sys.argv:
+                address = host_name
+            else
+                address_index = sys.argv.index("--address")
+                address = sys.argv[address_index + 1]
             template = None
             if len(sys.argv) == 7:
                 if "--template" not in sys.argv:
