@@ -6,7 +6,7 @@ import re
 def print_usage():
     usage = """
     \033[94mUsage:\033[0m
-        sysmon-cli \033[92madd-host\033[0m <host_name> [--address <hostname_or_ip> --template <template_name>]
+        sysmon-cli \033[92madd-host\033[0m <host_name> [--address <fqdn_or_ip>] [--template <template_name>]
         sysmon-cli \033[92mremove-host\033[0m <host_name>
         sysmon-cli \033[92mlist-hosts\033[0m
         sysmon-cli \033[92madd-template\033[0m <host_name> --template <template_name>
