@@ -1,0 +1,34 @@
+﻿[%# which one is authorized? #%]
+[% IF !c.check_cmd_permissions('service', c.request.parameters.service, c.request.parameters.host) %]
+  [% WRAPPER error.tt errorMessage = "you are not authorized for this command" errorDescription = "check your configuration if you believe this is an error" %][% END %]
+[% ELSE %]
+
+[%# description used by the commands page #%]
+[% WRAPPER $cmd_tt
+   request     = 'You are requesting to disable notifications for a service'
+   description = 'This command is used to prevent notifications from being sent out for the specified service. You will have to re-enable notifications for this service before any alerts can be sent out in the future.'
+%]
+
+[%# definition of the command send to your backend #%]
+[% BLOCK action %]
+    [% service_desc         = c.request.parameters.service %]
+    [% host_name            = c.request.parameters.host %]
+    [% IF c.stash.require_comments_for_disable_cmds %]
+    [% comment_author       = c.stash.remote_user %]
+    [% comment_data         = c.request.parameters.com_data_disable_cmd %]
+    [% END %]
+
+    DISABLE_SVC_NOTIFICATIONS;[% sprintf("%s;%s",host_name,service_desc) %]
+    [% IF c.stash.require_comments_for_disable_cmds %]
+    ADD_SVC_COMMENT;[% sprintf("%s;%s;1;%s;DISABLE_SVC_NOTIFICATIONS: %s",host_name,service_desc,comment_author,comment_data) %]
+    [% END %]
+[% END %]
+
+[%# definition of the html form data #%]
+[% PROCESS _cmd_parts.tt %]
+  [% PROCESS cmd_form_host %]
+  [% PROCESS cmd_form_service %]
+  [% PROCESS cmd_form_disable_cmd_comment %]
+
+[% END %]
+[% END %]

@@ -1,0 +1,96 @@
+﻿<div class="head justify-between">
+  <h3>Settings</h3>
+  <button class="iconOnly medium" onClick="toggleElement('pref_pane'); return false;"><i class="uil uil-times"></i></button>
+</div>
+<table class="table-fixed cellspacing">
+  <tr>
+    <th class="align-middle w-5"><i class="uil uil-user"></i></th>
+    <th class="align-middle w-24">User Profile</th>
+    <td>
+      <a class="button w-40" href="[% url_prefix %]cgi-bin/user.cgi">show user profile</a>
+    </td>
+  </tr>
+  <tr>
+    <th colspan=3 class="px-0 pt-1 border-b borderDefault"><h4 class="px-2">Session Settings</h4></th>
+  </tr>
+  <tr>
+    <th class="align-middle"><i class="uil uil-brush-alt"></i></th>
+    <th class="align-middle">Theme</th>
+    <td class="flex gap-x-1">
+      [% IF c.config.themes.size > 1 %]
+        <select name="theme" id="pref_theme" class="w-40" onchange="switchTheme(this)">
+          <option value="auto:"[% IF !cookie_theme || cookie_theme.match('/^auto:/') %] selected[% END %]>system default (auto.)</option>
+          [% FOR t = c.config.themes %]
+          <option value="[% t | html %]"[% IF cookie_theme && t == cookie_theme %] selected[% END %]>[% t | html %]</option>
+          [% END %]
+        </select>
+      [% ELSE %]
+      <div class="radiogroup min-w-[18rem]">
+        <input type="radio" name="theme" value="auto:" id="theme-auto" onchange="switchTheme('auto:')" [% IF !cookie_theme || cookie_theme.match('/^auto:/') %]checked[% END %]><label for="theme-auto" title="Use system default theme.&#013;Switches automatically between light/dark theme based on desktop preferences.">auto.</label>
+        [% FOR t = c.config.themes %]
+        <input type="radio" name="theme" value="[% t | html %]" id="theme-[% t | html %]" onchange="switchTheme('[% t | html %]')" [% IF cookie_theme && t == cookie_theme %]checked[% END %]><label for="theme-[% t | html %]">[% t | html %]</label>
+        [% END %]
+      </div>
+      [% END %]
+    </td>
+  </tr>
+  [% IF show_sounds %]
+  <tr>
+    <th class="align-middle">[% IF play_sounds %]<i class="uil uil-volume"></i>[% ELSE %]<i class="uil uil-volume-mute"></i>[% END %]</th>
+    <th class="align-middle">Sounds</th>
+    <td>
+      [% IF has_cgi_sounds %]
+      <input type="button" name="submit" value="[% IF play_sounds %]sound is on[% ELSE %]sound is off[% END %]" onClick="prefSubmitSound(full_uri, '[% IF play_sounds %]off[% ELSE %]on[% END %]')" class="w-40">
+      [% ELSE %]
+      <input type="button" name="submit" value="no sound files configured in cgi.cfg" disabled class="w-40">
+      [% END %]
+    </td>
+  </tr>
+  [% END %]
+  <tr>
+    <th class="align-middle"><i class="uil uil-star"></i></th>
+    <th class="align-middle">Favicon</th>
+    <td>
+      <input type="button" name="submit" value="[% IF fav_counter %]counter is on[% ELSE %]counter is off[% END %]" onClick="prefSubmitCounter(full_uri, '[% IF fav_counter %]off[% ELSE %]on[% END %]')" class="w-40">
+    </td>
+  </tr>
+  <tr>
+    <th class="align-middle"><i class="uil uil-web-section-alt"></i></th>
+    <th class="align-middle">Navigation</th>
+    <td>
+      <div class="radiogroup w-72">
+        <input type="radio" name="navigation" value="0" id="nav0" onchange="setNavigationStyle(0)" [% IF menu_states.exists('cl') && menu_states.cl == 0 %]checked[% END %]><label for="nav0">default</label>
+        <input type="radio" name="navigation" value="1" id="nav1" onchange="setNavigationStyle(1)" [% IF menu_states.exists('cl') && menu_states.cl == 1 %]checked[% END %]><label for="nav1">collapsed</label>
+        <input type="radio" name="navigation" value="2" id="nav2" onchange="setNavigationStyle(2)" [% IF menu_states.exists('cl') && menu_states.cl == 2 %]checked[% END %]><label for="nav2">hover</label>
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <th colspan=3 class="px-0 pt-1 border-b borderDefault"><h4 class="px-2">Page Actions</h4></th>
+  </tr>
+  [% IF c.config.exists('use_feature_reports') && c.config.use_feature_reports %]
+  <tr>
+    <th class="align-middle"><i class="uil uil-newspaper"></i></th>
+    <th class="align-middle">Report</th>
+    <td>
+      <input type="button" name="submit" value="create e-mail report for this page" class="w-72" onClick="window.location='[% url_prefix %]cgi-bin/reports2.cgi?action=edit&amp;report=new&amp;template=report_from_url.tt&amp;params.url='+(original_uri ? original_uri : encodeURIComponent(full_uri)); return false;">
+    </td>
+  </tr>
+  [% END %]
+  [% IF has_debug_options %]
+  <tr>
+    <th class="align-middle"><i class="uil uil-file-plus-alt"></i></th>
+    <th class="align-middle">Debug</th>
+    <td>
+      <input type="button" name="submit" value="open page with debug options"  class="w-72" onClick="window.location=uriWith(full_uri, { debug: 1 }); return false;">
+    </td>
+  </tr>
+  [% END %]
+  <tr>
+    <th class="align-middle"><i class="uil uil-sync"></i></th>
+    <th class="align-middle">Page Refresh</th>
+    <td class="align-middle">
+      <span id="refresh_rate" class="flex items-center gap-x-2"></span>
+    </td>
+  </tr>
+</table>

@@ -1,0 +1,22 @@
+﻿Please describe what you did:
+
+
+Make sure the report does not contain confidential information.
+
+---------------
+Url:        [%+ uri_with(c, {}, "", "", 1) +%]
+Browser:    [%+ get_browser_user_agent() +%]
+Version:    [% fullversion(c) +%]
+Release:    [% c.config.released +%]
+[%- IF c.config.exists('lmd_version') +%]
+LMD:        [% c.config.lmd_version +%]
+[%- END +%]
+[%+ debug_details(c) +%]
+Backends:
+  State | Program Version | Data Source Version
+[%+ FOREACH pd IN backends -%]
+    [% sprintf("%-3s", backend_detail.$pd.state) %] | [% IF pi_detail.exists(pd) %][% IF pi_detail.$pd.exists('program_version'); sprintf("%-15s", pi_detail.$pd.program_version); ELSE; sprintf("%-15s", "unknown"); END %] | [% IF pi_detail.$pd.exists('data_source_version'); pi_detail.$pd.data_source_version; END %][% END +%]
+[%+ END +%]
+
+Stacktrace:
+[%+ stacktrace %]

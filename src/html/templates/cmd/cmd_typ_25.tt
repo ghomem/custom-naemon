@@ -1,0 +1,40 @@
+﻿[%# which one is authorized? #%]
+[% IF !c.check_cmd_permissions('host', c.request.parameters.host) %]
+  [% WRAPPER error.tt errorMessage = "you are not authorized for this command" errorDescription = "check your configuration if you believe this is an error" %][% END %]
+[% ELSE %]
+
+[%# description used by the commands page #%]
+[% WRAPPER $cmd_tt
+   request     = 'You are requesting to disable notifications for a host'
+   description = 'This command is used to prevent notifications from being sent out for the specified host. You will have to re-enable notifications for this host before any alerts can be sent out in the future. Note that this command <i>does not</i> disable notifications for services associated with this host.'
+%]
+
+[%# definition of the command send to your backend #%]
+[% BLOCK action %]
+    [% host_name            = c.request.parameters.host %]
+    [% IF c.stash.require_comments_for_disable_cmds %]
+    [% comment_author       = c.stash.remote_user %]
+    [% comment_data         = c.request.parameters.com_data_disable_cmd %]
+    [% END %]
+
+    [% IF c.request.parameters.ptc %]
+        DISABLE_HOST_AND_CHILD_NOTIFICATIONS;[% sprintf("%s",host_name) %]
+        [% IF c.stash.require_comments_for_disable_cmds %]
+        ADD_HOST_COMMENT;[% sprintf("%s;1;%s;DISABLE_HOST_AND_CHILD_NOTIFICATIONS: %s",host_name,comment_author,cmd,comment_data) %]
+        [% END %]
+    [% ELSE %]
+        DISABLE_HOST_NOTIFICATIONS;[% sprintf("%s",host_name) %]
+        [% IF c.stash.require_comments_for_disable_cmds %]
+        ADD_HOST_COMMENT;[% sprintf("%s;1;%s;DISABLE_HOST_NOTIFICATIONS: %s",host_name,comment_author,cmd,comment_data) %]
+        [% END %]
+    [% END %]
+[% END %]
+
+[%# definition of the html form data #%]
+[% PROCESS _cmd_parts.tt %]
+  [% PROCESS cmd_form_host %]
+  [% PROCESS cmd_form_ptc name="Disable" %]
+  [% PROCESS cmd_form_disable_cmd_comment %]
+
+[% END %]
+[% END %]

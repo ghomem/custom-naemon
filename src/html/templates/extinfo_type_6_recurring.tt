@@ -1,0 +1,40 @@
+﻿[% USE date %]
+[% PROCESS _header.tt %]
+[% PROCESS _message.tt %]
+
+[% PROCESS _extinfo_cmd_pane.tt cmd_type="recurring" %]
+
+[% PROCESS _infobox.tt %]
+<h1 class="mt-5">Recurring Downtimes</h1>
+
+<div class="flexrow flex-nowrap my-2">
+  <div class="flex basis-1/3 self-end gap-1">
+  </div>
+  <div class="basis-1/3 self-end">
+    <div class="hint text-center whitespace-nowrap text-xs">Mark downtimes with leftclick. Select multiple with shift + mouse.</div>
+  </div>
+  <div class="basis-1/3 flex"></div>
+</div>
+
+<div class="card w-full min-w-[420px] mt-2">
+  <div class="mainTableHeader">
+    <div>
+      [% PROCESS _table_search_field.tt ids=["recurring_downtimes_table_all"] %]
+    </div>
+    [% IF !command_disabled(c, '55') && !command_disabled(c, '56') %]
+      <div class="flex justify-end">
+        <a class="button green" href='extinfo.cgi?recurring=add&amp;type=6'>Add recurring downtime</a>
+      </div>
+    [% END %]
+  </div>
+  <div class="mainTable [% IF main_table_full %]fullsize[% END %]">
+    [% PROCESS _downtimes_recurring_table.tt downtimes = downtimes type='all' names=1 %]
+  </div>
+  <div class="mainTableFooter">
+    <div class="flex-1 self-center">
+      [% PROCESS _pager_total_items.tt pager = { total_items => downtimes.size } data=downtimes %]
+    </div>
+  </div>
+</div>
+
+[% PROCESS _footer.tt %]

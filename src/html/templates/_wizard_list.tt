@@ -1,0 +1,39 @@
+﻿<button id="[% id %]_btn" name="[% wzd_args | html %]" style="display: none;" onclick="init_tool_list_wizard(this.id, this.name); return false;"></button>
+
+
+<div id="[% id %]_dialog" class="card shadow-float flexcol gap-0 w-[700px]" style="display: none !important;">
+  <div class="head justify-between">
+    <h3>List Wizzard</h3>
+    <button class="iconOnly medium" onClick="closeModalWindow(); return false;"><i class="uil uil-times"></i></button>
+  </div>
+  <div class="body flexrow flex-nowrap gap-1 grow">
+    <table class="cellspacing-none w-full h-full">
+      <tr>
+        <th class="text-center">Available</th>
+        <td></td>
+        <th class="text-center">Selected</th>
+      </tr>
+      <tr>
+        <td class="align-top w-1/2">
+          <input type="text" class="w-full rounded-b-none border-b-0 deletable" onkeyup="data_filter_select('[% id %]_available_members', this.value)" id="[% id %]_available_members_filter">
+          <select class="w-full h-72 rounded-none overflow-y-scroll" multiple id="[% id %]_available_members" name="[% id %]_available_members" ondblclick="data_select_move('[% id %]_available_members', '[% id %]_selected_members')">
+            <option disabled>loading...</option>
+          </select>
+        </td>
+        <td class="w-auto">
+          <button class="m-2 p-0 px-1" id="[% id %]_add" onclick="data_select_move('[% id %]_available_members', '[% id %]_selected_members'); return false;"><i class="uil uil-angle-double-right m-0 text-2xl"></i></button>
+          <button class="m-2 p-0 px-1" id="[% id %]_remove" onclick="data_select_move('[% id %]_selected_members', '[% id %]_available_members'); return false;"><i class="uil uil-angle-double-left m-0 text-2xl"></i></button>
+        </td>
+        <td class="align-top w-1/2">
+          <input class="w-full rounded-b-none border-b-0 deletable" type="text" onkeyup="data_filter_select('[% id %]_selected_members', this.value)">
+          <select class="w-full h-72 rounded-none overflow-y-scroll" multiple id="[% id %]_selected_members" name="[% id %]_selected_members" ondblclick="data_select_move('[% id %]_selected_members', '[% id %]_available_members')">
+            <option disabled>loading...</option>
+          </select>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="footer justify-center">
+    <button id="[% id %]_accept" class="green w-40">accept</button>
+  </div>
+</div>

@@ -1,0 +1,11 @@
+﻿[% USE date %]
+[% PROCESS _header.tt %]
+[% PROCESS _message.tt %]
+
+[% WRAPPER _avail_report_header.tt %]
+  All Hosts
+[% END %]
+
+[% PROCESS avail_report_hosts_part.tt %]
+
+[% PROCESS _footer.tt %]

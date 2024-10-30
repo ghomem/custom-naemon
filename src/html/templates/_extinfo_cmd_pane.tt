@@ -1,0 +1,50 @@
+﻿<script>
+<!--
+  [%+ IF cmd_type == "downtimes" %]
+  type = "downtime";
+  [%+ ELSIF cmd_type == "recurring" %]
+  type = "recurring";
+  [% ELSE %]
+  type = "comment";
+  [% END +%]
+
+  jQuery(document).ready(function() {
+    jQuery("TBODY > TR.js-downtime-row").each(function(nr, elem) {
+      jQuery(elem).addClass("clickable");
+      elem.onclick=toggle_comment;
+    });
+  });
+-->
+</script>
+<div class="card z-50 fixed right-0 top-[50px] mt-0 w-[350px] rounded-t-none rounded-r-none" style="display: none;" id="cmd_pane">
+  <div class="head">
+    <h3>Quick Commands</h3>
+    <button class="iconOnly medium absolute right-2 top-2" onClick="unset_comments(); return false;"><i class="uil uil-times"></i></button>
+  </div>
+  <div class="body">
+    [% IF cmd_type == "recurring" %]
+      <form action="extinfo.cgi" method="POST" id="quick_cmd_form" onsubmit="setFormBtnSpinner(this)">
+        <input type="hidden" name="type" value="6">
+        <input type="hidden" name="recurring" value="task">
+    [% ELSE %]
+      <form action="cmd.cgi" method="POST" id="quick_cmd_form" onsubmit="setFormBtnSpinner(this)">
+    [% END %]
+      <input type="hidden" name="CSRFtoken" value="[% get_user_token(c) %]">
+      <input type="hidden" name="referer" value="[% short_uri(c, {referer => 'undef'}) %]">
+      <input type="hidden" name="selected_ids" id="selected_ids" value="">
+      <select name="quick_command" id="quick_command" onChange="check_selected_command(this.value)" class="w-full mt-2">
+        [% IF c.config.cmd_quick_status.downtime && cmd_type == "recurring" %]
+        <option value="fix">auto cleanup recurring downtimes</option>
+        <option value="remove">remove recurring downtimes</option>
+        [% END %]
+        [% IF c.config.cmd_quick_status.downtime && cmd_type == "downtimes" %]
+        <option value="5">remove downtimes</option>
+        [% END %]
+        [% IF c.config.cmd_quick_status.comment && cmd_type == "comments" %]
+        <option value="13">remove comments</option>
+        [% END %]
+      </select>
+      <button id="multi_cmd_submit_button" onClick="return collectFormData('quick_cmd_form')" class="mt-2 mx-auto w-40 submit">send command</button>
+    </form>
+  </div>
+</div>

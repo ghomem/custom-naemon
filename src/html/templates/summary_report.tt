@@ -1,0 +1,53 @@
+﻿[% PROCESS _header.tt %]
+
+<div class="flexrow justify-between gap-x-1">
+  [% PROCESS _infobox.tt extra_classes="h-auto min-w-[350px]" %]
+  <div class="card min-w-[350px] h-auto">
+    <div class="head">
+      <h3>[% report_title %]</h3>
+    </div>
+    <div class="body flexcol gap-2 items-center">
+      <h3 class="text-center">
+        <span class="block">[% format_date(start, datetime_format) %]</span>
+        <span class="block">to</span>
+        <span class="block">[% format_date(end, datetime_format) %]</span>
+      </h3>
+      <div>Duration: [% SET dur = end - start %][% duration(dur) %]</div>
+    </div>
+  </div>
+  <div class="card min-w-[350px] h-[195px]">
+    <div class="head">
+      <h3>Report Options Summary</h3>
+    </div>
+    <div class="body">
+      <table class="cellspacing">
+        <tr>
+          <th>Alert Types</th>
+          <td>[% alerttypefilter %] Alerts</td>
+        </tr>
+        <tr>
+          <th>State Types</th>
+          <td>[% statetypefilter %] States</td>
+        </tr>
+        <tr>
+          <th>Host States</th>
+          <td>[% hoststatusfilter %]</td>
+        </tr>
+        <tr>
+          <th>Service States</th>
+          <td>[% servicestatusfilter %]</td>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <a href="summary.cgi" class="button noprint">Generate New Report</a>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+[% PROCESS $report_template %]
+
+[% PROCESS _footer.tt %]

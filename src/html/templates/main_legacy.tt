@@ -1,0 +1,107 @@
+﻿[% PROCESS _header.tt %]
+
+<script>
+<!--
+  var allowed_frame_links = [% json_encode(allowed_frame_links) %];
+  function get_host() {
+    var host = window.location.protocol + '//' + window.location.host;
+    if(window.location.port != "" && host.indexOf(':' + window.location.port) == -1) {
+        host += ':' + window.location.port;
+    }
+    return(host);
+  }
+
+  // check for frame url from url hash and redirect if found
+  function redirect_legacy_hash_url() {
+    var pageurl;
+    var newurl  = new String(window.location.hash);
+    newurl      = newurl.replace(/^#+/, '');
+    if(newurl == '') {
+        return(false);
+    }
+    var oldurl  = new String(window.location);
+    oldurl      = oldurl.replace(/#.*$/, '');
+    if(window.location.pathname.match(/\/[% product_prefix %]\/$/) && newurl != 'main.html' && newurl != '') {
+        if(newurl.match(/^\w+:\/\//)) {
+            pageurl = newurl;
+        }
+        else if(newurl.match(/^\//)) {
+            pageurl = get_host() + newurl;
+        } else {
+            pageurl = oldurl + newurl;
+        }
+    }
+    if(!pageurl) {
+        return(false);
+    }
+    pageurl = pageurl.replace(/"/g, '&quot;');
+    if(pageurl.match(/\/[% product_prefix %]\//)) {
+        jQuery("BODY").css("display", "none"); // prevent flickering
+        window.location = pageurl;
+    } else {
+      // external url requires iframe
+      // check permissions against allowed_frame_links
+      if(is_frame_url_allowed(pageurl, allowed_frame_links)) {
+        jQuery("#mainframe").html('<iframe src="'+pageurl+'" class="h-full w-full border-0"><\/iframe>');
+        jQuery("FOOTER").remove();
+      } else {
+        thruk_message(1, 'This URL is not allowed to be embedded. Check <a href="https://thruk.org/documentation/configuration.html#_allowed_frame_links" target="_blank" class="textBody link"><i class="uil uil-external-link-alt text-sm"></i>allowed_frame_links</a> configuration.');
+      }
+    }
+    return(true);
+  }
+
+  if(!redirect_legacy_hash_url()) {
+    [% IF c.config.start_page != '' %]
+      window.location.hash = '[% c.config.start_page %]';
+    [% ELSE %]
+      window.location = "./cgi-bin/main.cgi";
+    [% END %]
+  }
+
+  window.onhashchange = function(e) {
+    if(e == null || e.newURL == null) {
+      return;
+    }
+    redirect_legacy_hash_url();
+  }
+-->
+</script>
+
+<div class="mb-10 mx-auto w-fit">
+  <a href="[% c.config.home_link %]"><img src="[% url_prefix %]themes/[% theme %]/images/mdops.png" alt="Thruk" title="Thruk"></a>
+</div>
+
+<div class="card min-w-[420px] max-w-[500px] w-full mt-5 mx-auto">
+  <div class="head justify-center">
+    <h3>Sysmon</h3>
+  </div>
+  <div class="body">
+    <table class="cellspacing w-fit mx-auto">
+      <tr>
+        <th>Thruk Version</th>
+        <td>[% thrukversion %]</td>
+      </tr>
+      [% IF c.config.extra_version %]
+        <tr>
+          <th>OMD Version</th>
+          <td>[% c.config.extra_version %]</td>
+        </tr>
+      [% END %]
+      <tr>
+        <th>Release</th>
+        <td>[% c.config.released %]</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <div class="flex gap-x-2">
+            <button><a href="http://www.thruk.org/download.html?version=[% thrukversion %]" target="_blank">Check for updates</a></button>
+            <button><a href="[% url_prefix %]changes.html">Read what's new in Thruk</a></button>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+[% PROCESS _footer.tt %]

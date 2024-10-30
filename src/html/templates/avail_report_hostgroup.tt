@@ -1,0 +1,19 @@
+﻿[% USE date %]
+[% PROCESS _header.tt %]
+[% PROCESS _message.tt %]
+
+[% WRAPPER _avail_report_header.tt %]
+  [% IF hostgroup == 'all' %]
+    All Hostgroups
+  [% ELSE %]
+    Hostgroup '[% hostgroup %]'
+  [% END %]
+[% END %]
+
+[% FOR groupname IN groups.keys.sort %]
+    [% SET hostgroupname = groupname %]
+    [% SET hosts         = groups.$groupname.hosts %]
+    [% PROCESS avail_report_hosts_part.tt %]
+[% END %]
+
+[% PROCESS _footer.tt %]

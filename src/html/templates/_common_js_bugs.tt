@@ -1,0 +1,9 @@
+﻿[%+ IF show_error_reports +%]
+var version_info        = '[% fullversion(c) %]';
+var released            = '[% c.config.released %]';
+var thruk_errors        = [];
+var bug_email_rcpt      = "[% bug_email_rcpt %]";
+var skip_js_errors      = [% json_encode(skip_js_errors.list) %];
+var show_error_reports  = "[% show_error_reports %]";
+window.onerror          = thruk_onerror;
+[%+ END +%]

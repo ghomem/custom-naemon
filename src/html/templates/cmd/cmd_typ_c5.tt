@@ -1,0 +1,54 @@
+﻿[% UNLESS c.request.parameters.service %]
+    [%# which one is authorized? #%]
+    [% IF !c.check_cmd_permissions('host', c.request.parameters.host) %]
+      [% WRAPPER error.tt errorMessage = "you are not authorized for this command" errorDescription = "check your configuration if you believe this is an error" %][% END %]
+    [% ELSE %]
+
+    [%# description used by the commands page #%]
+    [% WRAPPER $cmd_tt
+       request     = 'You are requesting to delete all downtimes for a host'
+       description = 'This command is used to delete all downtimes associated with the specified host.'
+    %]
+
+    [%# definition of the command send to your backend #%]
+    [% BLOCK action %]
+        [% host_name            = c.request.parameters.host %]
+    [% END %]
+
+    [%# definition of the html form data #%]
+[% PROCESS _cmd_parts.tt %]
+      [% PROCESS cmd_form_host %]
+      [% PROCESS cmd_form_del_downtime_opts %]
+
+    [% END %]
+    [% END %]
+
+[% ELSE %]
+
+    [%# which one is authorized? #%]
+    [% IF !c.check_cmd_permissions('service', c.request.parameters.service, c.request.parameters.host) %]
+      [% WRAPPER error.tt errorMessage = "you are not authorized for this command" errorDescription = "check your configuration if you believe this is an error" %][% END %]
+    [% ELSE %]
+
+    [%# description used by the commands page #%]
+    [% WRAPPER $cmd_tt
+       request     = 'You are requesting to delete all downtimes for a service'
+       description = 'This command is used to delete all downtimes associated with the specified service.'
+    %]
+
+    [%# definition of the command send to your backend #%]
+    [% BLOCK action %]
+        [% host_name            = c.request.parameters.host %]
+        [% service_desc         = c.request.parameters.service %]
+    [% END %]
+
+    [%# definition of the html form data #%]
+[% PROCESS _cmd_parts.tt %]
+      [% PROCESS cmd_form_host %]
+      [% PROCESS cmd_form_service %]
+      [% PROCESS cmd_form_del_downtime_opts %]
+
+    [% END %]
+    [% END %]
+
+[% END %]

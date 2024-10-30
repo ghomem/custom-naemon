@@ -1,0 +1,200 @@
+﻿[% PROCESS _header.tt  %]
+[% PROCESS _message.tt %]
+[% USE date %]
+
+<div class="flexrow 2xl:justify-between">
+  [% PROCESS _infobox.tt %]
+
+  <form action="extinfo.cgi" method="POST" class="min-w-[420px] max-w-[550px] w-full">
+    <div class="card w-full">
+      <input type="submit" name="send" value="save" style="display:none"><!-- make enter submit the form -->
+      <input type="hidden" name="nr" value="[% rd.file | html %]">
+      <input type="hidden" name="type" value="6">
+      <input type="hidden" name="CSRFtoken" value="[% get_user_token(c) %]">
+      <div class="head justify-between">
+        <div class="w-32">
+          <a href="extinfo.cgi?type=6&amp;recurring" class="button header-button rounded w-16" title="Go back to recurring downtimes">
+            <i class="uil uil-angle-double-left"></i>Back
+          </a>
+        </div>
+        <h3>Recurring Downtime</h3>
+        <div class="w-32 text-right">
+          [% IF rd.exists("fixable") %]
+            <button class="w-32" title="remove none-existing entries" onclick="send_form_in_background_and_reload(this, {recurring: 'fix'}); return false;">
+              <i class="uil uil-band-aid"></i> auto cleanup
+            </button>
+          [% END %]
+        </div>
+      </div>
+      <div class="overflow-auto">
+        <table class='recurring_downtimes body cellspacing'>
+          <tr class="firstrow">
+            <th>Type</th>
+            <td colspan=2>
+              <select name="target" class="w-32" id="type_select" onchange="update_recurring_type_select('type_select')"[% IF !can_edit %] disabled[% END %]>
+                <option[% IF rd.target == 'host'         %] selected[% END %]>Host</option>
+                <option[% IF rd.target == 'service'      %] selected[% END %]>Service</option>
+                <option[% IF rd.target == 'hostgroup'    %] selected[% END %]>Hostgroup</option>
+                <option[% IF rd.target == 'servicegroup' %] selected[% END %]>Servicegroup</option>
+              </select>
+            </td>
+          </tr>
+
+          [% IF backends.size > 1 %]
+            <tr>
+              <th class="align-top">Backend</th>
+              <td colspan=2>
+                [% IF backends.size > 10 %]
+                  [% PROCESS _backends_select_multi.tt param_name='d_backends' selected_backends=rd.backends can_edit=can_edit onchange="" %]
+                [% ELSIF backends.size > 1 %]
+                [% backends_selected=0 %]
+                [% IF rd.backends.size < backends.size && rd.backends.size > 0 %][% backends_selected=1 %][% END %]
+                <input type="checkbox" id="ext_backends_toggle" name="ext_backends_toggle"[% IF backends_selected %] checked[% END %] onclick="toggleDisabled('d_backends')" style="vertical-align: top;"><span onclick="toggleCheckBox('ext_backends_toggle'); toggleDisabled('d_backends');" class="clickable"> Select Backends:</span><br>
+                <select name="d_backends" id="d_backends" multiple style="min-width: 180px;"[% IF !can_edit || !backends_selected %] disabled[% END %]>
+                  [% FOREACH b = backends %]
+                  <option value="[% b | html %]"[% FOREACH rb = rd.backends %][% IF backends_selected && rb == b %] selected[% END %][% END %]>[% backend_detail.$b.name %]</option>
+                  [% END %]
+                </select>
+                [% END %]
+              </td>
+            </tr>
+          [% END %]
+          <tr id="input_host">
+            <th>Host</th>
+            <td colspan=2>
+              <div class="flexrow flex-nowrap gap-x-1">
+                <input type="text" class="w-full" id="host" name="host" value="[% rd.host.list.join(', ') | html %]" onfocus="this.click()" onclick="ajax_search.init(this, 'host', { url: 'status.cgi?format=search&amp;type=host', autosubmit:false, backend_select:'d_backends', list: '\\s*,\\s*' })"[% IF !can_edit %] disabled[% END %]>
+                [% IF can_edit %]
+                  [% PROCESS _wizard_list.tt id="id_host_wzd" wzd_args="" %]
+                  <button class="px-1" onclick="init_filter_list_wizard('id_host_wzd_', 'host', 'host', { url: 'status.cgi?format=search&amp;type=host', autosubmit:false, backend_select:'d_backends', limit: 300 }); return false;" title="open list editor">
+                    <i class="uil uil-sliders-v mx-0"></i>
+                  </button>
+                [% END %]
+              </div>
+            </td>
+          </tr>
+          <tr id="input_service">
+            <th>Service</th>
+            <td colspan=2>
+              <div class="flexrow flex-nowrap gap-x-1">
+                <input type="text" class="w-full" id="service" name="service" value="[% rd.service.list.join(', ') | html %]" onfocus="this.click()" onclick="ajax_search.init(this, 'service', { url: 'status.cgi?format=search&amp;type=services&amp;host=', autosubmit:false, append_value_of: 'host', backend_select:'d_backends', list: '\\s*,\\s*' })"[% IF !can_edit %] disabled[% END %]>
+                [% IF can_edit %]
+                  [% PROCESS _wizard_list.tt id="id_service_wzd" wzd_args="" %]
+                  <button class="px-1" onclick="init_filter_list_wizard('id_service_wzd_', 'service', 'service', { url: 'status.cgi?format=search&amp;type=services&amp;host=', autosubmit:false, append_value_of: 'host', backend_select:'d_backends', limit: 300 }); return false;" title="open list editor">
+                    <i class="uil uil-sliders-v mx-0"></i>
+                  </button>
+                [% END %]
+              </div>
+            </td>
+          </tr>
+          <tr id="input_hostgroup">
+            <th>Hostgroup</th>
+            <td colspan=2>
+              <div class="flexrow flex-nowrap gap-x-1">
+                <input type="text" class="w-full" id="hostgroup" name="hostgroup" value="[% rd.hostgroup.list.join(', ') | html %]" onfocus="this.click()" onclick="ajax_search.init(this, 'hostgroup', { url: 'status.cgi?format=search&amp;type=hostgroups', autosubmit:false, backend_select:'d_backends', list: '\\s*,\\s*' })"[% IF !can_edit %] disabled[% END %]>
+                [% IF can_edit %]
+                  [% PROCESS _wizard_list.tt id="id_hostgroup_wzd" wzd_args="hostgroup,hostgroups,1" %]
+                    <button class="px-1" name="[% wzd_args | html %]" onclick="init_tool_list_wizard('[% id %]_btn', this.name); return false;" title="open list editor">
+                      <i class="uil uil-sliders-v mx-0"></i>
+                    </button>
+                [% END %]
+              </div>
+            </td>
+          </tr>
+          <tr id="input_servicegroup">
+            <th>Servicegroup</th>
+            <td colspan=2>
+              <div class="flexrow flex-nowrap gap-x-1">
+                <input type="text" class="w-full" id="servicegroup" name="servicegroup" value="[% rd.servicegroup.list.join(', ') | html %]" onfocus="this.click()" onclick="ajax_search.init(this, 'servicegroup', { url: 'status.cgi?format=search&amp;type=servicegroups', autosubmit:false, backend_select:'d_backends', list: '\\s*,\\s*' })"[% IF !can_edit %] disabled[% END %]>
+                [% IF can_edit %]
+                  [% PROCESS _wizard_list.tt id="id_servicegroup_wzd" wzd_args="servicegroup,servicegroups,1" %]
+                    <button class="px-1" name="[% wzd_args | html %]" onclick="init_tool_list_wizard('[% id %]_btn', this.name); return false;" title="open list editor">
+                      <i class="uil uil-sliders-v mx-0"></i>
+                    </button>
+                [% END %]
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <th>Comment</th>
+            <td colspan=2>
+              <input type="text" class="w-full" name="comment" value="[% rd.comment | html %]"[% IF !can_edit %] disabled[% END %]>
+            </td>
+          </tr>
+          <tr>
+            <th class="align-top">Schedule</th>
+            <td colspan=2>
+              <table id="cron_entries">
+                [% cr = { type => 'month', day => 1, week_day => '', hour => 0, minute => 0, cust => '' } %]
+                [% PROCESS _cron_edit.tt nr = 0 %]
+                [% FOREACH cr = rd.schedule %]
+                    [% nr = loop.index + 1 %]
+                    [% PROCESS _cron_edit.tt %]
+                [% END %]
+                [% IF can_edit %]
+                  <tr>
+                    <td colspan=3 onclick="add_cron_row('cron_entries'); return false;" class="min-w-[100px] whitespace-nowrap clickable hoverable rounded">
+                      <i class="uil uil-angle-down text-lg leading-3" title="add new schedule entry"></i> add more
+                    </td>
+                  </tr>
+                [% END %]
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <th>Duration<br>(in minutes)</th>
+            <td colspan=2>
+              <input type="text" class="w-32" name="duration" value="[% rd.duration | html %]"[% IF !can_edit %] disabled[% END %]>
+            </td>
+          </tr>
+          <tr>
+            <th>Type</th>
+            <td colspan=2>
+              <select class="w-32" name='fixed'[% IF !can_edit %] disabled[% END %]>
+                <option value="1"[% IF rd.fixed == "1" %] selected[% END %]>Fixed </option>
+                <option value="0"[% IF rd.fixed == "0" %] selected[% END %]>Flexible </option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <th>If Flexible, Range<br>(in minutes)</th>
+            <td colspan=2>
+              <input type="text" class="w-32" name="flex_range" value="[% rd.flex_range | html %]"[% IF !can_edit %] disabled[% END %]>
+            </td>
+          </tr>
+          <tr id="input_host_options">
+            <th>Child Hosts</th>
+            <td colspan=2>
+              <select class="w-full" name="childoptions"[% IF !can_edit %] disabled[% END %]>
+                <option value="0"[% IF rd.childoptions == "0" %] selected[% END %]>Do nothing with child hosts</option>
+                <option value="1"[% IF rd.childoptions == "1" %] selected[% END %]>Schedule triggered downtime for all child hosts</option>
+                <option value="2"[% IF rd.childoptions == "2" %] selected[% END %]>Schedule non-triggered downtime for all child hosts</option>
+              </select>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="footer justify-evenly">
+        [% IF rd.file %]
+          <button name="recurring" value="remove" class="hover-red w-32" onclick="return(confirm('Do you really want to remove this downtime?'))">
+            <i class="uil uil-trash-alt"></i>Delete
+          </button>
+        [% END %]
+        <button name="recurring" value="save" class="w-32 green"[% IF !can_edit %] disabled[% END %]>Save</button>
+      </div>
+    </div>
+  </form>
+  <div class="w-[350px] hidden xl:block"></div>
+</div>
+
+<script>
+  <!--
+    [%+ IF rd.schedule.size == 0 +%]
+    add_cron_row('cron_entries');
+    [%+ END +%]
+    update_recurring_type_select('type_select');
+  -->
+  </script>
+
+[% PROCESS _footer.tt %]

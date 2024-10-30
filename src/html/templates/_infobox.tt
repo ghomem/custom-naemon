@@ -1,0 +1,49 @@
+﻿[% USE date %]
+[% DEFAULT extra_classes = "" %][% IF extra_classes %][% SET extra_classes =  " " _ extra_classes %][% END %]
+<div class="card min-w-[350px][% extra_classes %] overflow-hidden">
+  <div class="head">
+    <h3>[% infoBoxTitle %]</h3>
+  </div>
+  <table>
+    [% IF show_last_update %]
+    <tr>
+      <th class="px-2 pt-2">Date</th>
+      <td>
+        <span id="infoboxdate">[% format_date(date.now, datetime_format_long) %]</span>[% IF ! no_auto_reload %]<span id="refresh_label" title="page with automatically refresh every [% refresh_rate %] seconds"> (&infin;[% refresh_rate %]s)</span>[% END %]
+      </td>
+    </tr>
+    [% END %]
+    <tr>
+      <th class="px-2">Version</th>
+      <td class="truncate">
+        <a class="link" href='http://www.thruk.org' target='_blank'>Thruk [% thrukversion %]</a>
+      </td>
+    </tr>
+    [% IF c.config.extra_version %]
+      <tr>
+        <th class="px-2">OMD</th>
+        <td>
+          <a class="link" href='[% c.config.extra_version_link %]' target='_blank'>[% c.config.extra_version %]</a>
+        </td>
+      </tr>
+    [% END %]
+    [% IF c.user_exists %]
+    <tr>
+      <th class="px-2">User</th><td><a class="link" href="[% url_prefix %]cgi-bin/user.cgi">[% remote_user %]</a></td>
+    </tr>
+    [% IF has_proc_info %]
+    <tr>
+      <td colspan="2">
+        [% hasCmd = c.check_cmd_permissions('system') %]
+        [% IF pi.keys.size > 0 && pi.enable_notifications == 0    %][% IF hasCmd %]<a class="js-modal-command-link" href="cmd.cgi?cmd_typ=12">[% END %]<div class='textALERT hoverable px-2 pb-1'> - Notifications are disabled</div>[% IF hasCmd %]</a>[% END %][% END %]
+        [% IF pi.keys.size > 0 && pi.enable_notifications == -1   %][% IF hasCmd %]<a class="js-modal-command-link" href="cmd.cgi?cmd_typ=12">[% END %]<div class='textALERT hoverable px-2 pb-1'> - Notifications are partially disabled</div>[% IF hasCmd %]</a>[% END %][% END %]
+        [% IF pi.keys.size > 0 && pi.execute_service_checks == 0  %][% IF hasCmd %]<a class="js-modal-command-link" href="cmd.cgi?cmd_typ=35">[% END %]<div class='textALERT hoverable px-2 pb-1'> - Service checks are disabled </div>[% IF hasCmd %]</a>[% END %][% END %]
+        [% IF pi.keys.size > 0 && pi.execute_service_checks == -1 %][% IF hasCmd %]<a class="js-modal-command-link" href="cmd.cgi?cmd_typ=35">[% END %]<div class='textALERT hoverable px-2 pb-1'> - Service checks are partially disabled </div>[% IF hasCmd %]</a>[% END %][% END %]
+        [% IF pi.keys.size > 0 && pi.execute_host_checks == 0     %][% IF hasCmd %]<a class="js-modal-command-link" href="cmd.cgi?cmd_typ=88">[% END %]<div class='textALERT hoverable px-2 pb-1'> - Host checks are disabled </div>[% IF hasCmd %]</a>[% END %][% END %]
+        [% IF pi.keys.size > 0 && pi.execute_host_checks == -1    %][% IF hasCmd %]<a class="js-modal-command-link" href="cmd.cgi?cmd_typ=88">[% END %]<div class='textALERT hoverable px-2 pb-1'> - Host checks are partially disabled </div>[% IF hasCmd %]</a>[% END %][% END %]
+      </td>
+    </tr>
+    [% END %]
+    [% END %]
+  </table>
+</div>

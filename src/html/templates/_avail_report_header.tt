@@ -1,0 +1,22 @@
+﻿<div class="flexrow justify-between gap-x-1">
+  [% PROCESS _infobox.tt extra_classes="h-auto" %]
+
+  <div class="card min-w-[355px] h-auto">
+    <div class="head">
+      <h3>[% content %]</h3>
+    </div>
+    <div class="body flexcol gap-2 items-center">
+      <h3 class="text-center">
+        <span class="block">[% format_date(start, datetime_format) %]</span>
+        <span class="block">to</span>
+        <span class="block">[% format_date(end, datetime_format) %]</span>
+      </h3>
+      <div>Duration: [% SET dur = end - start %][% duration(dur) %]</div>
+      <div>[ Availability report completed in [% duration(time_token, 2) %] ]</div>
+    </div>
+  </div>
+
+  <div class="flex">
+    [% PROCESS avail_report_form_box.tt %]
+  </div>
+</div>

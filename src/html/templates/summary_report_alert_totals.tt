@@ -1,0 +1,114 @@
+﻿<div class="grow flexcol gap-2 items-center">
+
+  <h3>[% box_title %]</h3>
+
+  [%  FOREACH report_key = data.keys.sort %]
+    [% SET d = data.$report_key %]
+    <div class="card">
+      [% IF d.sub_title %]
+        <div class="head">
+          <h3>[% d.sub_title %]</h3>
+        </div>
+      [% END %]
+      <div class="body">
+        <table>
+          <tr>
+            <td class="align-top">
+            [% UNLESS d.no_hosts %]
+              <table class='cellspacing striped'>
+                <thead>
+                  <tr>
+                    <th colspan="4" class="text-center">Host Alerts</th>
+                  </tr>
+                  <tr>
+                    <th>State</th>
+                    <th>Soft Alerts</th>
+                    <th>Hard Alerts</th>
+                    <th>Total Alerts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class='UP text-center'>UP</td>
+                    <td>[% d.host.SOFT.UP %]</td>
+                    <td>[% d.host.HARD.UP %]</td>
+                    <td>[% d.host.SOFT.UP + d.host.HARD.UP %]</td>
+                  </tr>
+                  <tr>
+                    <td class='DOWN text-center'>DOWN</td>
+                    <td>[% d.host.SOFT.DOWN %]</td>
+                    <td>[% d.host.HARD.DOWN %]</td>
+                    <td>[% d.host.SOFT.DOWN + d.host.HARD.DOWN %]</td>
+                  </tr>
+                  <tr>
+                    <td class='UNREACHABLE text-center'>UNREACHABLE</td>
+                    <td>[% d.host.SOFT.UNREACHABLE %]</td>
+                    <td>[% d.host.HARD.UNREACHABLE %]</td>
+                    <td>[% d.host.SOFT.UNREACHABLE + d.host.HARD.UNREACHABLE %]</td>
+                  </tr>
+                  <tr><td colspan="4">&nbsp;</td></tr>
+                  <tr>
+                    <td>All States</td>
+                    <td>[% d.host.SOFT.UP + d.host.SOFT.DOWN + d.host.SOFT.UNREACHABLE %]</td>
+                    <td>[% d.host.HARD.UP + d.host.HARD.DOWN + d.host.HARD.UNREACHABLE %]</td>
+                    <td class="font-bold">[% d.host.SOFT.UP + d.host.SOFT.DOWN + d.host.SOFT.UNREACHABLE + d.host.HARD.UP + d.host.HARD.DOWN + d.host.HARD.UNREACHABLE %]</td>
+                  </tr>
+                </tbody>
+              </table>
+            [% END %]
+            </td>
+
+            <td>
+              <table class='cellspacing striped'>
+                <thead>
+                  <tr>
+                    <th colspan="4" class="text-center">Service Alerts</th>
+                  </tr>
+                  <tr>
+                    <th>State</th>
+                    <th>Soft Alerts</th>
+                    <th>Hard Alerts</th>
+                    <th>Total Alerts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class='OK text-center'>OK</td>
+                    <td>[% d.service.SOFT.OK %]</td>
+                    <td>[% d.service.HARD.OK %]</td>
+                    <td>[% d.service.SOFT.OK + d.service.HARD.OK %]</td>
+                  </tr>
+                  <tr>
+                    <td class='WARNING text-center'>WARNING</td>
+                    <td>[% d.service.SOFT.WARNING %]</td>
+                    <td>[% d.service.HARD.WARNING %]</td>
+                    <td>[% d.service.SOFT.WARNING + d.service.HARD.WARNING %]</td>
+                  </tr>
+                  <tr>
+                    <td class='UNKNOWN text-center'>UNKNOWN</td>
+                    <td>[% d.service.SOFT.UNKNOWN %]</td>
+                    <td>[% d.service.HARD.UNKNOWN %]</td>
+                    <td>[% d.service.SOFT.UNKNOWN + d.service.HARD.UNKNOWN %]</td>
+                  </tr>
+                  <tr>
+                    <td class='CRITICAL text-center'>CRITICAL</td>
+                    <td>[% d.service.SOFT.CRITICAL %]</td>
+                    <td>[% d.service.HARD.CRITICAL %]</td>
+                    <td>[% d.service.SOFT.CRITICAL + d.service.HARD.CRITICAL %]</td>
+                  </tr>
+                  <tr>
+                    <td>All States</td>
+                    <td>[% d.service.SOFT.OK + d.service.SOFT.WARNING + d.service.SOFT.UNKNOWN + d.service.SOFT.CRITICAL %]</td>
+                    <td>[% d.service.HARD.OK + d.service.HARD.WARNING + d.service.HARD.UNKNOWN + d.service.HARD.CRITICAL %]</td>
+                    <td class="font-bold">[% d.service.SOFT.OK + d.service.SOFT.WARNING + d.service.SOFT.UNKNOWN + d.service.SOFT.CRITICAL + d.service.HARD.OK + d.service.HARD.WARNING + d.service.HARD.UNKNOWN + d.service.HARD.CRITICAL %]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  [% END %]
+
+</div>

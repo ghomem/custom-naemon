@@ -1,0 +1,34 @@
+﻿[% PROCESS _header.tt %]
+
+[% PROCESS _infobox.tt %]
+
+<h1 class="mt-5">Availability Report</h1>
+
+<div class="card mx-auto min-w-[420px] max-w-[800px] w-full mt-5 overflow-hidden">
+  <div class="head p-0">
+    <span class="tabs w-40 active"><a class="flex" href="#">1. Report Type</a></span>
+  </div>
+
+  <form method="get" action="avail.cgi">
+    <div class="body">
+      <table class="cellspacing-x w-fit mx-auto">
+        <tr>
+          <th class="text-right">Type</th>
+          <td>
+            <select name='report_type'>
+              <option value="hostgroups">Hostgroup(s)</option>
+              <option value="hosts">Host(s)</option>
+              <option value="servicegroups">Servicegroup(s)</option>
+              <option value="services">Service(s)</option>
+            </select>
+          </td>
+        </tr>
+      </table>
+    </div>
+    <div class="footer justify-center">
+      <input class="green" type='submit' value='Continue to Step 2'>
+    </div>
+  </form>
+</div>
+
+[% PROCESS _footer.tt %]

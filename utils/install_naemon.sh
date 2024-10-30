@@ -172,7 +172,6 @@ rm -f printer.cfg switch.cfg windows.cfg
 rm -f templates/hosts.cfg templates/contacts.cfg
 
 # Install PNP4Nagios
-
 cd /opt
 git clone https://github.com/pnp4nagios/pnp4nagios.git
 cd pnp4nagios/
@@ -200,6 +199,11 @@ sed -i 's|^\(\$conf\['"'"'nagios_base'"'"'\] = "\)/nagios/cgi-bin";|\1/naemon/cg
 a2enconf pnp4nagios
 a2enconf thruk_cookie_auth.include
 rm /usr/local/pnp4nagios/share/install.php
+sudo sed -i "s|^\(\s*\$conf\['graph_opt'\]\s*=\s*\)\"\";|\1\"--color BACK#FFFFFF --color CANVAS#FFFFFF --color SHADEA#FFFFFF --color SHADEB#FFFFFF\";|" /usr/local/pnp4nagios/etc/config.php
+
+# Add the custom html files for our custom experience
+cp -r /opt/custom-naemon/src/html/templates /usr/share/thruk/
+chown -R /usr/share/thruk/templates
 
 systemctl enable naemon thruk apache2
 systemctl restart naemon

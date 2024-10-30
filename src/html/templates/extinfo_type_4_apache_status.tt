@@ -1,0 +1,20 @@
+﻿[% PROCESS _header.tt %]
+
+<div class="flexrow">
+  <div class="flexcol">
+    [% PROCESS _infobox.tt %]
+    <div class="card overflow-hidden">
+      <div class="actionbox less-padding">
+        <div><a href='extinfo.cgi?type=4'>Back to Performance Info</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card w-full mt-5 overflow-auto min-w-[420px]">
+  <div>
+    [% content %]
+  </div>
+</div>
+
+[% PROCESS _footer.tt %]

@@ -1,0 +1,36 @@
+﻿[% PROCESS _header.tt %]
+[% PROCESS _message.tt %]
+
+[% PROCESS _infobox.tt %]
+
+[% PROCESS _cmd_parts.tt %]
+
+[% IF form_errors.size > 0 %]
+  <div class="card shadow-float fixed p-1 z-50 min-w-[600px] top-14 left-1/2 transform -translate-x-1/2 text-center">
+    <span class="font-semibold textALERT">Please correct the following errors:</span>
+    <div class="flex justify-center">
+      <ul class="w-fit text-left">
+      [% FOREACH e = form_errors %]
+        <li class="list-disc">[% e.message %]</li>
+      [% END %]
+      </ul>
+    </div>
+  </div>
+[% END %]
+
+<h1 class="mt-5">[% request %]</h1>
+
+<div class="flexrow justify-center mt-5">
+  [% PROCESS _cmd_form.tt %]
+
+  <div class="card min-w-[600px] h-auto" id="cmdHelp">
+    <div class="head">
+      <h3>Command Description</h3>
+    </div>
+    <div class="body">
+      [% description %]
+    </div>
+  </div>
+</div>
+
+[% PROCESS _footer.tt %]

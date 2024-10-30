@@ -1,0 +1,184 @@
+﻿[% USE date %]
+[% PROCESS _header.tt %]
+
+<form action="notifications.cgi" method="GET" id="date_form">
+  [% IF c.request.parameters.defined("entries") %]
+  <input type="hidden" name="entries" value="[% c.request.parameters.entries | html %]">
+  [% END %]
+
+  <div class="flexrow justify-between gap-x-1">
+    <div class="flex">
+      [% PROCESS _infobox.tt %]
+    </div>
+
+    <div class="flex">
+      [% PROCESS _log_date_select.tt %]
+    </div>
+
+    <div class="flex">
+      <div class="card min-w-[400px]">
+        <div class="head">
+          <h3>Options</h3>
+        </div>
+        <div class="body">
+          <table>
+            <tr>
+              <td class="pr-2"><input type='text' name='contact' id='contact' value="[% IF contact != 'all'; escape_html(contact); END %]" onfocus="this.click()" onclick="ajax_search.init(this, 'contact', { url: 'status.cgi?format=search&amp;type=contact', autosubmit:false, striped:false })" placeholder="contact"></td>
+              <td>
+                <select name='type'>
+                  <option value="0"[%     IF type == 0     %] selected[% END %]>All notifications</option>
+                  [% IF service == '' || service == 'all' %]
+                  <option value="1"[%     IF type == 1     %] selected[% END %]>All service notifications</option>
+                  <option value="2"[%     IF type == 2     %] selected[% END %]>All host notifications</option>
+                  [% END %]
+                  <option value="8192"[%  IF type == 8192  %] selected[% END %]>Service custom</option>
+                  <option value="512"[%   IF type == 512   %] selected[% END %]>Service acknowledgements</option>
+                  <option value="4"[%     IF type == 4     %] selected[% END %]>Service warning</option>
+                  <option value="8"[%     IF type == 8     %] selected[% END %]>Service unknown</option>
+                  <option value="16"[%    IF type == 16    %] selected[% END %]>Service critical</option>
+                  <option value="32"[%    IF type == 32    %] selected[% END %]>Service recovery</option>
+                  <option value="2048"[%  IF type == 2048  %] selected[% END %]>Service flapping</option>
+                  [% IF service == '' %]
+                  <option value="16384"[% IF type == 16384 %] selected[% END %]>Host custom</option>
+                  <option value="1024"[%  IF type == 1024  %] selected[% END %]>Host acknowledgements</option>
+                  <option value="64"[%    IF type == 64    %] selected[% END %]>Host down</option>
+                  <option value="128"[%   IF type == 128   %] selected[% END %]>Host unreachable</option>
+                  <option value="256"[%   IF type == 256   %] selected[% END %]>Host recovery</option>
+                  <option value="4096"[%  IF type == 4096  %] selected[% END %]>Host flapping</option>
+                  [% END %]
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td class="pr-2"><input type='text' name='host' id='host' value="[% IF host != 'all'; escape_html(host); END %]" onfocus="this.click()" onclick="ajax_search.init(this, 'host', { url: 'status.cgi?format=search&amp;type=host', autosubmit:false })" placeholder="host name"></td>
+              <td><input type='checkbox' id="oldestfirst" name="oldestfirst" [% IF oldestfirst %] checked[% END %]> <label for="oldestfirst">Older Entries First</label></td>
+            </tr>
+            <tr>
+              <td class="pr-2"><input type='text' name='service' id='service' value="[% service | html %]" onfocus="this.click()" onclick="ajax_search.init(this, 'service', { url: 'status.cgi?format=search&amp;type=services&amp;host=', autosubmit:false, append_value_of: 'host' })" placeholder="service"></td>
+              <td>
+                [% IF c.config.defined("logcache") && c.config.logcache %]
+                <input type='checkbox' id="disable_logcache" name="logcache" value="0" [% IF c.req.parameters.exists("logcache") && c.req.parameters.logcache == 0 %] checked[% END %]> <label for="disable_logcache">Disable Logcache</label>
+                [% END %]
+              </td>
+            </tr>
+            <tr>
+              <td class="pr-2">
+                <input type="text" class="w-full" name="pattern" value="[% pattern | html %]" placeholder="search pattern">
+              </td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="pr-2">
+                <input type="text" class="w-full" name="exclude_pattern" value="[% exclude_pattern | html %]" placeholder="exclude pattern">
+              </td>
+              <td colspan="2"><input type='submit' value='Apply' class="w-24"></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</form>
+
+<div>
+  <h1 class="py-4">
+  [% IF contact == 'all' %]
+    All Contacts
+  [% ELSIF contact != '' %]
+    Contact '[% contact | html %]'
+  [% ELSIF host != '' and service != '' %]
+    [% IF service != '' and service != 'all' %]
+      Service '[% service | html %]' On Host '[% host | html %]'
+    [% ELSE %]
+      All Services On Host '[% host | html %]'
+    [% END %]
+  [% ELSIF host == 'all'  %]
+    All Hosts and Services
+  [% ELSIF host != ''  %]
+    Host '[% host | html %]'
+  [% END %]
+  </h1>
+</div>
+
+<div class="flex place-items-end gap-1">
+  [% PROCESS _add_bookmark.tt style="detail" %]
+  [% PROCESS _show_link.tt style="detail" %]
+  [% PROCESS _excel_export.tt columns=[ 'Host', 'Service', 'Site', 'Type', 'Time', 'Contact', 'Command', 'Information' ] with_custom_vars=0 %]
+</div>
+
+<div class="card w-full mt-2 min-w-[420px]">
+  <div class="mainTableHeader">
+    <div></div>
+    <div>
+      [% PROCESS _pager.tt %]
+    </div>
+    <div>
+      [% PROCESS _pager_per_page.tt %]
+    </div>
+  </div>
+  <div class="mainTable [% IF main_table_full %]fullsize[% END %]">
+    <table class="mainTable striped">
+      <thead>
+        <tr>
+          <th class='notifications'>Host</th>
+          <th class='notifications'>Service</th>
+          [% IF backends.size > 1 %]
+          <th class='notifications'>Site</th>
+          [% END %]
+          <th class='notifications'>Type</th>
+          <th class='notifications'>Time</th>
+          <th class='notifications'>Contact</th>
+          <th class='notifications'>Notification Command</th>
+          <th class='notifications'>Information</th>
+        </tr>
+      </thead>
+      <tbody>
+        [% FOREACH n = data %]
+        [% PROCESS _notifications_log_line.tt %]
+        <tr>
+          <td><a class="link" href="extinfo.cgi?type=1&amp;host=[% n.host_name | uri %]&amp;backend=[% n.peer_key %]">[% n.host_name | html %]</a></td>
+          <td>
+            [% IF n.service_description %]
+            <a class="link" href="extinfo.cgi?type=2&amp;host=[% n.host_name | uri %]&amp;service=[% n.service_description | uri %]&amp;backend=[% n.peer_key %]">[% n.service_description | html %]</a>
+            [% END %]
+          </td>
+          [% IF backends.size > 1 %]
+          <td>[% peer_name(n) %]</td>
+          [% END %]
+          <td class='[% statusclass %]'>[% level %]</td>
+          <td>[% date_format(c, n.time) %]</td>
+          <td><a class="link" href="config.cgi?type=contacts#[% n.contact_name | uri %]">[% n.contact_name | html %]</a></td>
+          <td><a class="link" href="config.cgi?type=commands#[% n.command_name | uri %]">[% n.command_name | html %]</a></td>
+          <td>[% IF escape_html_tags %][% escape_html(log_line_plugin_output(n)) %][% ELSE %][% log_line_plugin_output(n) %][% END %]</td>
+        </tr>
+        [% END %]
+        [% IF data.size == 0 %]
+          <tr>
+            <td colspan="8">
+              <div class='textALERT text-center'>
+                [% IF contact != '' %]
+                  No notifications have been recorded for this contact in the current timeperiod
+                [% ELSIF host != '' and service != 'all' %]
+                  No notifications have been recorded for this service in the current timeperiod
+                [% ELSIF host != '' && host != 'all' %]
+                  No notifications have been recorded for this host in the current timeperiod
+                [% ELSE %]
+                  No notifications have been recorded in the current timeperiod
+                [% END %]
+              </div>
+            </td>
+          </tr>
+        [% END %]
+      </tbody>
+    </table>
+  </div>
+  <div class="mainTableFooter">
+    <div class="flex-1 self-center">
+      [% PROCESS _pager_total_items.tt %]
+    </div>
+  </div>
+</div>
+
+
+[% PROCESS _footer.tt %]

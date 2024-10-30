@@ -1,0 +1,123 @@
+﻿[% USE date %]
+[% size = 1 %]
+[% IF data %][% size = data.size + 1 %][% END %]
+  <worksheet name='[% name %]' autofilter='A1:[% last_col %][% size %]'>
+    <row>
+      <format bold='1' bg_color='silver' align='center'>
+        [% FOREACH col = columns %]
+        [% IF    col == "Site"                     %]<cell width='15'>Site</cell>
+        [% ELSIF col == "Hostname"                 %]<cell width='30'>Hostname</cell>
+        [% ELSIF col == "Hostdisplayname"          %]<cell width='30'>Hostname</cell>
+        [% ELSIF col == "Host Parents"             %]<cell width='30'>Parents</cell>
+        [% ELSIF col == "Host Groups"              %]<cell width='30'>Hostgroups</cell>
+        [% ELSIF col == "Host Alias"               %]<cell width='30'>Host Alias</cell>
+        [% ELSIF col == "IP"                       %]<cell width='10'>IP</cell>
+        [% ELSIF col == "Host Acknowledged"        %]<cell width='16'>Host Acknowledged</cell>
+        [% ELSIF col == "Host Downtime"            %]<cell width='14'>Host Downtime</cell>
+        [% ELSIF col == "Host Notifications"       %]<cell width='14'>Host Notifications</cell>
+        [% ELSIF col == "Host Active Checks"       %]<cell width='16'>Host Active Checks</cell>
+        [% ELSIF col == "Host Flapping"            %]<cell width='11'>Host Flapping</cell>
+        [% ELSIF col == "Service"                  %]<cell width='30'>Service</cell>
+        [% ELSIF col == "Displayname"              %]<cell width='30'>Service</cell>
+        [% ELSIF col == "Status"                   %]<cell width='20'>Status</cell>
+        [% ELSIF col == "Last Check"               %]<cell width='20'>Last Check</cell>
+        [% ELSIF col == "Duration"                 %]<cell width='15'>Duration</cell>
+        [% ELSIF col == "Attempt"                  %]<cell width='10'>Attempt</cell>
+        [% ELSIF col == "Acknowledged"             %]<cell width='14'>Acknowledged</cell>
+        [% ELSIF col == "Downtime"                 %]<cell width='12'>Downtime</cell>
+        [% ELSIF col == "Notifications"            %]<cell width='12'>Notifications</cell>
+        [% ELSIF col == "Active Checks"            %]<cell width='14'>Active Checks</cell>
+        [% ELSIF col == "Flapping"                 %]<cell width='9'>Flapping</cell>
+        [% ELSIF col == "Status Information"       %]<cell width='80'>Status Information</cell>
+        [% ELSIF col == "Extra Status Information" %]<cell width='80'>Extra Status Information</cell>
+        [% ELSIF col == "Comments"                 %]<cell width='80'>Comments</cell>
+        [% ELSE %]<cell width='30'>[% escape_xml(col) %]</cell>
+        [% END %]
+        [% END %]
+      </format>
+    </row>
+    [% FOREACH s = data %]
+      [% SET peer_key      = s.peer_key %]
+      [% SET program_start = pi_detail.$peer_key.program_start %]
+
+      [% IF s.has_been_checked == 0 %]
+        [% state       = 'PENDING' %]
+        [% state_color = 'grey' %]
+      [% ELSIF s.state == 0 %]
+        [% state       = 'OK' %]
+        [% state_color = 'green' %]
+      [% ELSIF s.state == 1 %]
+        [% state       = 'WARNING' %]
+        [% state_color = 'yellow' %]
+      [% ELSIF s.state == 2 %]
+        [% state       = 'CRITICAL' %]
+        [% state_color = 'red' %]
+      [% ELSIF s.state == 3 %]
+        [% state       = 'UNKNOWN' %]
+        [% state_color = 'orange' %]
+      [% END %]
+      <row>
+        [% FOREACH col = columns %]
+        [% IF    col == "Site"                     %]<cell>[% escape_xml(pi_detail.$peer_key.peer_name) %]</cell>
+        [% ELSIF col == "Hostname"                 %]<cell>[% escape_xml(s.host_name) %]</cell>
+        [% ELSIF col == "Hostdisplayname"          %]<cell>[% escape_xml(s.host_display_name) %]</cell>
+        [% ELSIF col == "Host Alias"               %]<cell>[% escape_xml(s.host_alias) %]</cell>
+        [% ELSIF col == "Host Parents"             %]<cell>[% escape_xml(s.host_parents.join(', ')) %]</cell>
+        [% ELSIF col == "Host Groups"              %]<cell>[% escape_xml(s.host_groups.join(', ')) %]</cell>
+        [% ELSIF col == "IP"                       %]<cell>[% escape_xml(s.host_address) %]</cell>
+        [% ELSIF col == "Host Acknowledged"        %]<cell>[% IF s.host_acknowledged             %]Yes[% ELSE %]No[% END %]</cell>
+        [% ELSIF col == "Host Downtime"            %]<cell>[% IF s.host_scheduled_downtime_depth %]Yes[% ELSE %]No[% END %]</cell>
+        [% ELSIF col == "Host Notifications"       %]<cell>[% IF s.host_notifications_enabled    %]Yes[% ELSE %]No[% END %]</cell>
+        [% ELSIF col == "Host Active Checks"       %]<cell>[% IF s.host_active_checks_enabled    %]Yes[% ELSE %]No[% END %]</cell>
+        [% ELSIF col == "Host Flapping"            %]<cell>[% IF s.host_is_flapping              %]Yes[% ELSE %]No[% END %]</cell>
+        [% ELSIF col == "Service"                  %]<cell>[% escape_xml(s.description) %]</cell>
+        [% ELSIF col == "Displayname"              %]<cell>[% escape_xml(s.display_name) %]</cell>
+        [% ELSIF col == "Status"                   %]<format bg_color='[% state_color %]'><cell>[% state %]</cell></format>
+        [% ELSIF col == "Last Check"               %]<format num_format='yyyy-mm-dd hh:mm:ss'><cell type='date_time'>[% IF s.has_been_checked == 0 %][% ELSE %][% format_date(s.last_check, '%Y-%m-%dT%H:%M:%S') %][% END %]</cell></format>
+        [% ELSIF col == "Duration"                 %]<cell>[% IF s.last_state_change %][% duration(date.now - s.last_state_change) %][% ELSE %][% duration(date.now - program_start) %]+[% END %]</cell>
+        [% ELSIF col == "Attempt"                  %]<format align='center'><cell>[% s.current_attempt %]/[% s.max_check_attempts %]</cell></format>
+        [% ELSIF col == "Acknowledged"             %]<cell>[% IF s.acknowledged             %]Yes[% ELSE %]No[% END %]</cell>
+        [% ELSIF col == "Downtime"                 %]<cell>[% IF s.scheduled_downtime_depth %]Yes[% ELSE %]No[% END %]</cell>
+        [% ELSIF col == "Notifications"            %]<cell>[% IF s.notifications_enabled    %]Yes[% ELSE %]No[% END %]</cell>
+        [% ELSIF col == "Active Checks"            %]<cell>[% IF s.active_checks_enabled    %]Yes[% ELSE %]No[% END %]</cell>
+        [% ELSIF col == "Flapping"                 %]<cell>[% IF s.is_flapping              %]Yes[% ELSE %]No[% END %]</cell>
+        [% ELSIF col == "Status Information"       %]<cell>[% IF s.has_been_checked == 0 %]Service check scheduled for [% format_date(s.next_check, datetime_format_long) %][% ELSE %][% escape_xml(s.plugin_output) %][% END %]</cell>
+        [% ELSIF col == "Extra Status Information" %]<cell>[% IF s.has_been_checked == 1 %][% escape_xml(s.long_plugin_output) %][% END %]</cell>
+        [% ELSIF col == "Comments"      %]
+          <cell>
+            [%- host_name = s.host_name; first = 1; -%]
+            [%- FOREACH h_peer_key = comments_by_host.keys -%]
+              [%- IF comments_by_host.$h_peer_key.defined(host_name) -%]
+                [%- FOREACH com = comments_by_host.$h_peer_key.$host_name -%]
+                  [%- IF com.defined("start_time") -%]
+                    [%- IF !first; ", "; END; first = 0; %]Host Downtime: [% escape_xml(com.author) %]: [% escape_xml(com.comment) %] ([% format_date(com.start_time, datetime_format) %] - [% format_date(com.end_time, datetime_format) -%])
+                  [%- ELSIF com.entry_type == 1 || com.entry_type == 4 -%]
+                    [%- IF com.entry_type == 1 %][% IF !first; ", "; END; first = 0; %]Host Comment[% ELSIF com.entry_type == 4 %]Host Acknowledgement[% END %]: [% escape_xml(com.author) %]: [% escape_xml(com.comment) -%]
+                  [%- END -%]
+                [%- END -%]
+              [%- END -%]
+            [%- END -%]
+            [%- service_description = s.description; IF comments_by_host_service.defined(peer_key) && comments_by_host_service.$peer_key.defined(host_name) && comments_by_host_service.$peer_key.$host_name.defined(service_description) -%]
+              [%- FOREACH com = comments_by_host_service.$peer_key.$host_name.$service_description -%]
+                [%- IF com.defined("start_time") -%]
+                  [%- IF !first; ", "; END; first = 0; %]Downtime: [% escape_xml(com.author) %]: [% escape_xml(com.comment) %] ([% format_date(com.start_time, datetime_format) %] - [% format_date(com.end_time, datetime_format) -%])
+                [%- ELSIF com.entry_type == 1 || com.entry_type == 4 -%]
+                  [%- IF com.entry_type == 1 %][% IF !first; ", "; END; first = 0; %]Comment[% ELSIF com.entry_type == 4 %]Acknowledgement[% END %]: [% escape_xml(com.author) %]: [% escape_xml(com.comment) -%]
+                [%- END -%]
+              [%- END -%]
+            [%- END -%]
+          </cell>
+        [% ELSE %]
+          [% val = "";
+             field = col.replace('^_+', '');
+             cust_vars = get_custom_vars(c, s,'',1);
+             IF cust_vars.exists(field); val = cust_vars.$field;
+             ELSIF cust_vars.exists('HOST' _ field); field = 'HOST' _ field; val = cust_vars.$field;
+             END;
+          %]
+          <cell>[% escape_xml(val) %]</cell>
+        [% END %]
+        [% END %]
+      </row>
+    [% END %]
+  </worksheet>

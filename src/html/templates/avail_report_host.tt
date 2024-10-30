@@ -1,0 +1,165 @@
+﻿[% USE date %]
+[% PROCESS _header.tt %]
+[% PROCESS _message.tt %]
+
+[% WRAPPER _avail_report_header.tt %]
+  Host '[% host | html %]'
+[% END %]
+
+<div class="card mt-5 min-w-[350px] overflow-hidden">
+  <div class="actionbox less-padding">
+    <div><a class="flex" href="avail.cgi?host=all&amp;t1=[% start %]&amp;t2=[% end %]&amp;backtrack=[% backtrack | uri %]&amp;assumestateretention=[% assumestateretention | uri %]&amp;assumeinitialstates=[% assumeinitialstates | uri %]&amp;assumestatesduringnotrunning=[% assumestatesduringnotrunning | uri %]&amp;initialassumedhoststate=[% initialassumedhoststate | uri %]&amp;initialassumedservicestate=[% initialassumedservicestate | uri %]&amp;[% IF show_log_entries %]show_log_entries[% END %]&amp;showscheduleddowntime=[% showscheduleddowntime | uri %]&amp;rpttimeperiod=[% rpttimeperiod | uri %]">View Availability Report For All Hosts</a></div>
+    [% IF use_feature_trends %]<div><a class="flex" href="trends.cgi?host=[% host | uri %]&amp;t1=[% start %]&amp;t2=[% end %]&amp;assumestateretention=[% assumestateretention | uri %]&amp;assumeinitialstates=[% assumeinitialstates | uri %]&amp;includesoftstates=[% includesoftstates | uri %]&amp;assumestatesduringnotrunning=[% assumestatesduringnotrunning | uri %]&amp;initialassumedhoststate=[% initialassumedhoststate | uri %]&amp;backtrack=[% backtrack | uri %]&amp;rpttimeperiod=[% rpttimeperiod | uri %]">View Trends For This Host</a></div>[% END %]
+    <div><a class="flex" href="status.cgi?host=[% host | uri %]">View Status Detail For This Host</a></div>
+    <div><a class="flex" href="history.cgi?host=[% host | uri %]&amp;nosystem=1">View Alert History For This Host</a></div>
+    <div><a class="flex" href="notifications.cgi?host=[% host | uri %]">View Notifications For This Host</a></div>
+    <div><a class="flex" href="extinfo.cgi?type=1&amp;host=[% host | uri %]">View Information For This Host</a></div>
+  </div>
+</div>
+
+<div class="card mx-auto mt-5 min-w-[1000px] overflow-hidden">
+  <div class='head'><h3>Host State Breakdowns</h3></div>
+  <div>
+    [% IF use_feature_trends %]
+      <div class="w-fit mx-auto p-2">
+        <a href="trends.cgi?host=[% host | uri %]&amp;t1=[% start %]&amp;t2=[% end %]&amp;includesoftstates=[% includesoftstates | uri %]&amp;assumestateretention=[% assumestateretention | uri %]&amp;assumeinitialstates=[% assumeinitialstates | uri %]&amp;assumestatesduringnotrunning=[% assumestatesduringnotrunning | uri %]&amp;initialassumedhoststate=[% initialassumedhoststate | uri %]&amp;backtrack=[% backtrack | uri %]&amp;rpttimeperiod=[% rpttimeperiod | uri %]">
+            <img
+              src="trends.cgi?createimage&amp;smallimage&amp;host=[% host | uri %]&amp;t1=[% start %]&amp;t2=[% end %]&amp;includesoftstates=[% includesoftstates | uri %]&amp;assumestateretention=[% assumestateretention | uri %]&amp;assumeinitialstates=[% assumeinitialstates | uri %]&amp;assumestatesduringnotrunning=[% assumestatesduringnotrunning | uri %]&amp;initialassumedhoststate=[% initialassumedhoststate | uri %]&amp;backtrack=[% backtrack | uri %]&amp;rpttimeperiod=[% rpttimeperiod | uri %]"
+              alt='Host State Trends'
+              title='Host State Trends'
+              width='500'
+              height='20'
+            >
+        </a>
+      </div>
+      <hr class="pb-2">
+    [% END %]
+
+    [% SET
+        total_time_unknown =
+              avail_data.hosts.$host.time_indeterminate_nodata
+            + avail_data.hosts.$host.time_indeterminate_notrunning
+            + avail_data.hosts.$host.time_indeterminate_outside_timeperiod
+    %]
+    [% SET
+        total_time =
+                avail_data.hosts.$host.time_up
+            + avail_data.hosts.$host.time_down
+            + avail_data.hosts.$host.time_unreachable
+            + avail_data.hosts.$host.time_indeterminate_nodata
+            + avail_data.hosts.$host.time_indeterminate_notrunning
+            + avail_data.hosts.$host.time_indeterminate_outside_timeperiod
+    %]
+    [% SET
+        total_time_known = total_time - total_time_unknown
+    %]
+    <table class="striped body cellspacing-x">
+      <tr>
+        <th>State</th>
+        <th>Type / Reason</th>
+        <th class="pl-20">Time</th>
+        <th>% Total Time</th>
+        <th>% Known Time</th>
+      </tr>
+      <tr>
+        <td class='UP' rowspan="3">UP</td>
+        <td>Unscheduled</td>
+        <td><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.time_up - avail_data.hosts.$host.scheduled_time_up) %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',(avail_data.hosts.$host.time_up - avail_data.hosts.$host.scheduled_time_up) / total_time * 100 ) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time_known > 0 %][% sprintf('%2.3f',(avail_data.hosts.$host.time_up - avail_data.hosts.$host.scheduled_time_up) / total_time_known * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+      </tr>
+      <tr>
+        <td>Scheduled</td>
+        <td><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.scheduled_time_up) %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.scheduled_time_up / total_time * 100 ) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time_known > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.scheduled_time_up / total_time_known * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+      </tr>
+      <tr class='UP'>
+        <td class='UP'>Total</td>
+        <td class='UP'><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.time_up) %]</span></td>
+        <td class='UP'><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.time_up / total_time * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td class='UP'><span class="inline-block w-16 text-right">[% IF total_time_known > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.time_up / total_time_known * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+      </tr>
+      <tr>
+        <td class='DOWN' rowspan="3">DOWN</td>
+        <td>Unscheduled</td>
+        <td><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.time_down - avail_data.hosts.$host.scheduled_time_down) %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',(avail_data.hosts.$host.time_down - avail_data.hosts.$host.scheduled_time_down) / total_time * 100 ) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time_known > 0 %][% sprintf('%2.3f',(avail_data.hosts.$host.time_down - avail_data.hosts.$host.scheduled_time_down) / total_time_known * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+      </tr>
+      <tr>
+        <td>Scheduled</td>
+        <td><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.scheduled_time_down) %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.scheduled_time_down / total_time * 100 ) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time_known > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.scheduled_time_down / total_time_known * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+      </tr>
+      <tr class='DOWN'>
+        <td class='DOWN'>Total</td>
+        <td class='DOWN'><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.time_down) %]</span></td>
+        <td class='DOWN'><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.time_down / total_time * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td class='DOWN'><span class="inline-block w-16 text-right">[% IF total_time_known > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.time_down / total_time_known * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+      </tr>
+      <tr>
+        <td class='UNREACHABLE' rowspan="3">UNREACHABLE</td>
+        <td>Unscheduled</td>
+        <td><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.time_unreachable - avail_data.hosts.$host.scheduled_time_unreachable ) %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',(avail_data.hosts.$host.time_unreachable - avail_data.hosts.$host.scheduled_time_unreachable) / total_time * 100 ) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time_known > 0 %][% sprintf('%2.3f',(avail_data.hosts.$host.time_unreachable - avail_data.hosts.$host.scheduled_time_unreachable) / total_time_known * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+      </tr>
+      <tr>
+        <td>Scheduled</td>
+        <td><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.scheduled_time_unreachable) %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.scheduled_time_unreachable / total_time * 100 ) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time_known > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.scheduled_time_unreachable / total_time_known * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+      </tr>
+      <tr class='UNREACHABLE'>
+        <td class='UNREACHABLE'>Total</td>
+        <td class='UNREACHABLE'><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.time_unreachable) %]</span></td>
+        <td class='UNREACHABLE'><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.time_unreachable / total_time * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td class='UNREACHABLE'><span class="inline-block w-16 text-right">[% IF total_time_known > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.time_unreachable / total_time_known * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+      </tr>
+      <tr>
+        <td rowspan="4">Undetermined</td>
+        <td>Monitoring Not Running</td>
+        <td><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.time_indeterminate_notrunning) %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.time_indeterminate_notrunning / total_time * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>Insufficient Data</td>
+        <td><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.time_indeterminate_nodata) %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.time_indeterminate_nodata / total_time * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>Outside Timeperiod</td>
+        <td><span class="inline-block w-32 text-right">[% duration(avail_data.hosts.$host.time_indeterminate_outside_timeperiod) %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',avail_data.hosts.$host.time_indeterminate_outside_timeperiod / total_time * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>Total</td>
+        <td><span class="inline-block w-32 text-right">[% duration(total_time_unknown) %]</span></td>
+        <td><span class="inline-block w-16 text-right">[% IF total_time > 0 %][% sprintf('%2.3f',total_time_unknown / total_time * 100) %]%[% ELSE %]0.000%[% END %]</span></td>
+        <td></td>
+      </tr>
+      <tr>
+        <th>All</th>
+        <th>Total</th>
+        <th><span class="inline-block w-32 text-right">[% duration(total_time) %]</span></th>
+        <th><span class="inline-block w-16 text-right">100.000%</span></th>
+        <th><span class="inline-block w-16 text-right">100.000%</span></th>
+      </tr>
+    </table>
+  </div>
+</div>
+
+
+[% PROCESS avail_report_services_part.tt %]
+
+
+[% IF show_log_entries or full_log_entries %]
+  [% PROCESS avail_report_log_entries.tt %]
+[% END %]
+
+[% PROCESS _footer.tt %]

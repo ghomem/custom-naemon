@@ -1,0 +1,198 @@
+﻿<!-- thruk: waiting for job [% pb_options.job_id %] -->
+<div
+  id="[% pb_options.id %]"
+  style="position: relative; width: [% pb_options.width %]px; height:[% pb_options.height %]px;"
+  [% IF pb_options.show_message %]onmouseover="return pb_overcard_[% pb_options.id %]()"
+  [% ELSE %]onmouseover="return pb_overin_[% pb_options.id %]()"[% END %]
+  onmouseout="return pb_overout_[% pb_options.id %]()"
+  class="flexrow flex-nowrap justify-between my-0"
+>
+  <div class="progressbar w-full" style="height:[% pb_options.height %]px;">
+    <div class="bar" style="height:[% pb_options.height %]px;"><div style="width:0%; height:[% pb_options.height %]px;" id="bar_[% pb_options.id %]"></div></div>
+  </div>
+  <div class="flexrow flex-nowrap justify-between z-30 absolute w-full">
+    <div class="w-6"></div>
+    <div class="job_time text-center" style="line-height: [% pb_options.lineheight %]px;">
+      [% IF pb_options.time < 0; "0"; ELSE; sprintf("%d", pb_options.time); END %]s
+      [% IF pb_options.show_message && pb_options.exists('message') && pb_options.message %] - [% pb_options.message %][% END %]
+    </div>
+    <div class="w-6">
+      <div id="cancel_[% pb_options.id %]" style="line-height: [% pb_options.lineheight %]px; display: none;" class="clickable w-6" onclick="return pb_cancel_[% pb_options.id %]()">
+        <i class="uil uil-times-circle"></i>
+      </div>
+    </div>
+  </div>
+</div>
+[% IF pb_options.defined("show_console") && pb_options.show_console %]
+<div class="continue_[% pb_options.id %] my-0" style="display: none; height:[% pb_options.height %]px;"><button onclick="reloadPage(null, null, true); return false;">job finished, continue</button></div>
+<textarea id="console_[% pb_options.id %]" class="CONSOLE w-[80%] h-[600px] my-2" readonly>
+</textarea>
+[% END %]
+<script>
+<!--
+    var last_time_[% pb_options.id %]          = 0;
+    var last_message_[% pb_options.id %]       = '';
+    var last_remaining_[% pb_options.id %]     = '';
+    var last_overmsg_[% pb_options.id %]       = '';
+    var is_loading_[% pb_options.id %]         = false;
+    var is_killed_[% pb_options.id %]          = false;
+    var data_percent_[% pb_options.id %]       = Number([% pb_options.percent %]);
+    var percent_per_second_[% pb_options.id %] = Number([% pb_options.percent_per_second %]);
+    var cur_pps_[% pb_options.id %]            = percent_per_second_[% pb_options.id %];
+
+    // register kill handler if page unloads
+    jQuery(window).on("beforeunload unload", function() {
+        if(!is_killed_[% pb_options.id %] && Number(data_percent_[% pb_options.id %]) < 100) {
+            is_killed_[% pb_options.id %] = true;
+            var datestr = Math.round((new Date()).getTime()/1000);
+            jQuery.ajax({
+                url: "job.cgi?job=[% pb_options.job_id %]&json=1&cancel=1&_"+datestr,
+                type: 'POST',
+                dataType: 'json',
+                async: false
+            });
+        }
+    });
+
+    jQuery(function() {
+        jQuery("#bar_[% pb_options.id %]" ).css("width", "[% pb_options.percent %]%");
+    });
+
+    function pb_overcard_[% pb_options.id %]() {
+        overcard({ 'bodyCls': 'p-2', 'body': "<div id='over_[% pb_options.id %]'><\/div>", 'caption': 'report status', 'width': 200 });
+        jQuery("#over_[% pb_options.id %]").html(last_overmsg_[% pb_options.id %]);
+        pb_overin_[% pb_options.id %]();
+        return;
+    }
+
+    function pb_overin_[% pb_options.id %]() {
+        [% IF pb_options.exists('hide_cancel_btn') && pb_options.hide_cancel_btn %]
+        return;
+        [% END %]
+        jQuery("#cancel_[% pb_options.id %]").show();
+    }
+
+    function pb_overout_[% pb_options.id %]() {
+        jQuery("#cancel_[% pb_options.id %]").hide();
+    }
+
+    function pb_cancel_[% pb_options.id %]() {
+        is_killed_[% pb_options.id %] = true;
+        clearInterval(timer_[% pb_options.id %]);
+        jQuery("#[% pb_options.id %] DIV.job_time").html("<div class='spinner'><\/div>killing...");
+
+        /* send kill request and reload/go back afterwards */
+        var datestr = Math.round((new Date()).getTime()/1000);
+        jQuery.ajax({
+            url: "job.cgi?job=[% pb_options.job_id %]&json=1&cancel=1&_"+datestr,
+            type: 'POST',
+            dataType: 'json',
+            success: function(data, status, jqXHR) {
+                jQuery("#[% pb_options.id %] DIV.job_time").html("killed");
+                jQuery("#cancel_[% pb_options.id %]").hide();
+                [% IF c.req.uri.match("job.cgi") %]
+                window.history.go(-1);
+                [% ELSE %]
+                reloadPage(null, null, true);
+                [% END %]
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                ajax_xhr_error_logonly(jqXHR, textStatus, errorThrown);
+                [% IF c.req.uri.match("job.cgi") %]
+                window.history.go(-1);
+                [% ELSE %]
+                reloadPage(null, null, true);
+                [% END %]
+            }
+        });
+        return;
+    }
+
+    function update_job_progressbar_[% pb_options.id %]() {
+        var datestr = Math.round((new Date()).getTime()/1000);
+        var val = data_percent_[% pb_options.id %];
+
+        // update every 2 seconds
+        if(last_time_[% pb_options.id %] != 0 && datestr%2 != 0 && val < 100) {
+            last_time_[% pb_options.id %] = last_time_[% pb_options.id %] + 1;
+            jQuery("#bar_[% pb_options.id %]" ).css("width", ""+(val + cur_pps_[% pb_options.id %])+"%");
+            jQuery("#[% pb_options.id %] DIV.job_time").html(Math.round(last_time_[% pb_options.id %]) + "s" + last_message_[% pb_options.id %]);
+            return;
+        }
+        if(is_loading_[% pb_options.id %]) { return; }
+        is_loading_[% pb_options.id %] = true;
+        jQuery.ajax({
+            url: "job.cgi?job=[% pb_options.job_id %]&json=1&_"+datestr,
+            type: 'POST',
+            dataType: 'json',
+            success: function(data, status, jqXHR) {
+                if(is_killed_[% pb_options.id %]) { return; }
+                is_loading_[% pb_options.id %] = false;
+                if(data.percent != 0) {
+                    jQuery("#bar_[% pb_options.id %]" ).css("width", ""+data.percent+"%");
+                    data_percent_[% pb_options.id %] = Number(data.percent);
+                }
+                if(data.percent != 100) {
+                    if([% pb_options.show_message %] && data.message) { last_message_[% pb_options.id %] = " - " + data.message; }
+                    if(data.remaining && data.remaining != -1) { last_remaining_[% pb_options.id %] = data.remaining; } else { last_remaining_[% pb_options.id %] = ''; }
+                    var title = last_message_[% pb_options.id %] + '<br>progress: ' + Math.round(data.percent)+"%<br>";
+                    if(last_remaining_[% pb_options.id %]) {
+                        title = title + "(~"+last_remaining_[% pb_options.id %]+" seconds remaining for this step)";
+                    }
+                    jQuery("#over_[% pb_options.id %]").html(title);
+                    last_overmsg_[% pb_options.id %] = title;
+                    last_time_[% pb_options.id %] = data.time;
+                    jQuery("#[% pb_options.id %] DIV.job_time").html(Math.round(data.time) + "s"+last_message_[% pb_options.id %]);
+                }
+                if(data.output != null) {
+                    var textconsole = jQuery("#console_[% pb_options.id %]");
+                    textconsole.text(data.output);
+                    if(textconsole.length)
+                        textconsole.scrollTop(textconsole[0].scrollHeight - textconsole.height());
+                    }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                ajax_xhr_error_logonly(jqXHR, textStatus, errorThrown);
+                is_loading_[% pb_options.id %] = false;
+                last_time_[% pb_options.id %]++;
+            }
+        });
+
+        val = data_percent_[% pb_options.id %];
+        if(val >= 100) {
+            clearInterval(timer_[% pb_options.id %]);
+            [% IF pb_options.defined("show_console") && pb_options.show_console %]
+                jQuery("#[% pb_options.id %]").hide();
+                jQuery(".continue_[% pb_options.id %]").css("display", "");
+            [% ELSE %]
+                reloadPage(null, null, true);
+            [% END %]
+            return;
+        } else {
+            var pps = percent_per_second_[% pb_options.id %];
+            if(val >= 90) {
+                pps = pps / 10;
+            } else if(val >= 70) {
+                pps = pps / 5;
+            } else if(val >= 50) {
+                pps = pps / 2;
+            }
+            val = val + pps;
+            cur_pps_[% pb_options.id %] = pps;
+            jQuery("#bar_[% pb_options.id %]").css("width", ""+val+"%");
+            data_percent_[% pb_options.id %] = val;
+        }
+    }
+
+    [% IF pb_options.percent != 100 %]
+    var timer_[% pb_options.id %];
+    jQuery(function() {
+        timer_[% pb_options.id %] = window.setInterval(update_job_progressbar_[% pb_options.id %], 1000);
+    });
+    [% END +%]
+-->
+</script>
+
+[% IF pb_options.defined("show_console") && pb_options.show_console %]
+<div class="continue_[% pb_options.id %] my-2" style="display: none;"><button onclick="reloadPage(null, null, true); return false;">job finished, continue</button></div>
+[% END %]

@@ -1,0 +1,45 @@
+﻿[% USE date %]
+[%# which one is authorized? #%]
+[% IF !c.check_cmd_permissions('servicegroup', c.request.parameters.servicegroup) %]
+  [% WRAPPER error.tt errorMessage = "you are not authorized for this command" errorDescription = "check your configuration if you believe this is an error" %][% END %]
+[% ELSE %]
+
+[%# description used by the commands page #%]
+[% WRAPPER $cmd_tt
+   request     = 'You are requesting to schedule downtime for all services in a particular servicegroup'
+   description = 'This command is used to schedule downtime for all services in a particular servicegroup. During the specified downtime, your Monitoring will not send notifications out about the services. When the scheduled downtime expires, your Monitoring will send out notifications for the services as it normally would. Scheduled downtimes are preserved across program shutdowns and restarts. Both the start and end times should be specified in the following format: <b>mm/dd/yyyy hh:mm:ss</b>. If you select the <i>fixed</i> option, the downtime will be in effect between the start and end times you specify. If you do not select the <i>fixed</i> option, your Monitoring will treat this as "flexible" downtime. Flexible downtime starts when a service enters a non-OK state (sometime between the start and end times you specified) and lasts as long as the duration of time you enter. The duration fields do not apply for fixed dowtime. Note that scheduling downtime for services does not automatically schedule downtime for the hosts those services are associated with. If you want to also schedule downtime for all hosts in the servicegroup, check the "Schedule downtime for hosts too" option.'
+%]
+
+[%# definition of the command send to your backend #%]
+[% BLOCK action %]
+    [% IF   c.request.parameters.fixed   %][% SET fixed = 1 %][% ELSE %][% SET fixed = 0 %][% END %]
+    [% IF ! c.request.parameters.hours   %][% SET c.request.parameters.hours = 0 %][% END %]
+    [% IF ! c.request.parameters.minutes %][% SET c.request.parameters.minutes = 0 %][% END %]
+    [% duration             = c.request.parameters.hours * 3600 + c.request.parameters.minutes * 60 %]
+    [% comment_data         = c.request.parameters.com_data %]
+    [% servicegroup_name    = c.request.parameters.servicegroup %]
+    [% comment_author       = c.request.parameters.com_author %]
+    [% triggered_by         = 0 %]
+
+    [% IF c.request.parameters.ahas %]
+        SCHEDULE_SERVICEGROUP_HOST_DOWNTIME;[% sprintf("%s;%lu;%lu;%d;%d;%lu;%s;%s",servicegroup_name,start_time_unix,end_time_unix,fixed,triggered_by,duration,comment_author,comment_data) %]
+    [% END +%]
+    SCHEDULE_SERVICEGROUP_SVC_DOWNTIME;[% sprintf("%s;%lu;%lu;%d;%d;%lu;%s;%s",servicegroup_name,start_time_unix,end_time_unix,fixed,triggered_by,duration,comment_author,comment_data) %]
+[% END %]
+
+[% IF c.request.parameters.start_time; SET start_time = c.request.parameters.start_time; ELSE; SET start_time = format_date(date.now,                   '%Y-%m-%d %H:%M:00'); END %]
+[% IF c.request.parameters.end_time;   SET end_time   = c.request.parameters.end_time;   ELSE; SET end_time   = format_date(date.now+downtime_duration, '%Y-%m-%d %H:%M:00'); END %]
+
+[%# definition of the html form data #%]
+[% PROCESS _cmd_parts.tt %]
+  [% PROCESS cmd_form_servicegroup %]
+  [% PROCESS cmd_form_author %]
+  [% PROCESS cmd_form_comment %]
+  [% PROCESS cmd_form_start_time range=1 %]
+  [% PROCESS cmd_form_end_time %]
+  [% PROCESS cmd_form_fixed %]
+  [% PROCESS cmd_form_duration %]
+  [% PROCESS cmd_form_ahas name="Schedule Downtime" %]
+
+[% END %]
+[% END %]

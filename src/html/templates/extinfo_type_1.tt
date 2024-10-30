@@ -1,0 +1,253 @@
+﻿[% USE date %]
+[% PROCESS _header.tt %]
+[% PROCESS _message.tt %]
+[% PROCESS custom_perf_bar_adjustments.tt %]
+
+[% SET peer_key = host.peer_key %]
+
+<div class="flexrow justify-between">
+  <div class="order-3 min-[1700px]:order-1">
+    <div class="hidden lg:block">
+      [% PROCESS _infobox.tt %]
+    </div>
+    [% IF matching_backends.size > 1 %]
+      <div class="card mt-5 min-w-[350px] p-3">
+        <form action="extinfo.cgi" method="GET">
+          <input type="hidden" name="type" value="1">
+          <input type="hidden" name="host" value="[% host.name | html %]">
+          <div class="flexrow gap-1 items-center">
+            <span>This host is ambiguous:</span>
+            <select name="backend">
+              [% FOREACH b IN matching_backends %]
+                <option value="[% b | html %]"[% IF b == backend %] selected[% END %]>[% peer_name(b) %]</option>
+              [% END %]
+            </select>
+            <input type="submit" name="go" value="go">
+          </div>
+        </form>
+      </div>
+    [% END %]
+    <div class="min-[1700px]:hidden block mt-5">
+      [% PROCESS _host_command_box.tt %]
+    </div>
+    <div class="card mt-5 min-w-[350px] overflow-hidden">
+      <div class="actionbox less-padding">
+        <div><a href="status.cgi?host=[% host.name | uri %]">View Status Detail For This Host</a></div>
+        [% IF host.childs.size > 0 %]<div><a href="status.cgi?style=hostdetail&amp;s0_type=parent&amp;s0_op=%3D&amp;s0_value=[% host.name | uri %]">View Child Hosts For This Host</a></div>[% END %]
+        [% IF show_impacts_link %]<div><a href="shinken_status.cgi?style=bothtypes&amp;s0_type=impact&amp;s0_op=%3D&amp;s0_value=[% host.name | uri %]&amp;title=Impacts of [% host.name | uri %]">View Impacts For This Problem</a></div>[% END %]
+        [% IF show_rootproblems_link %]<div><a href="shinken_status.cgi?style=bothtypes&amp;s0_type=rootproblem&amp;s0_op=%3D&amp;s0_value=[% host.name | uri %]&amp;title=Root problems of [% host.name | uri %]">View Root Problem For This Impact</a></div>[% END %]
+        <div class="flex flex-nowrap gap-x-1"><a href="history.cgi?host=[% host.name | uri %]&amp;nosystem=1&amp;backend=[% peer_key %]">View Alert History For This Host</a> (<a href="showlog.cgi?host=[% host.name | uri %]&amp;backend=[% peer_key %]">Logs</a> / <a href="avail.cgi?outages=1&host=[% host.name | uri %]&amp;backend=[% peer_key %]">Outages</a>)</div>
+        [% IF use_feature_trends %]<div><a href="trends.cgi?host=[% host.name | uri %]">View Trends For This Host</a></div>[% END %]
+        <div><a href="avail.cgi?host=[% host.name | uri %]&amp;show_log_entries">View Availability Report For This Host</a></div>
+        <div><a href="notifications.cgi?host=[% host.name | uri %]">View Notifications For This Host</a></div>
+        [% IF c.check_user_roles('authorized_for_configuration_information') %]
+          <div class="flex flex-nowrap gap-x-1">
+            <a href="config.cgi?type=hosts&amp;jump2=[% host.name | uri %]">View Configuration For This Host</a>
+            [% IF use_feature_configtool && c.check_user_roles('authorized_for_system_commands') && backends_with_obj_config.$peer_key %]
+              <a href="conf.cgi?edit&amp;host=[% host.name | uri %]&amp;backend=[% peer_key %]"> (Edit This Host)</a>
+            [% END %]
+          </div>
+        [% END %]
+      </div>
+    </div>
+
+    [% PROCESS _customvar_box.tt %]
+  </div>
+
+  <div class="flexcol flex-grow order-1 min-[1700px]:order-2">
+    <div class="card w-full">
+      <div class="head justify-between">
+        <h3>Host: [% _host(host) | html %]</h3>
+        <div class="flex gap-x-3 items-center">
+          [% cust_vars = get_custom_vars(c, host); IF cust_vars.exists('THRUK_ACTION_MENU') %]
+            <div>
+              [% menu = get_action_menu(c, cust_vars.THRUK_ACTION_MENU) %]
+              [% IF menu.defined('err') && menu.err %]
+                <i class="fa-solid fa-exclamation round small yellow" title="[% menu.err | html %]"></i>
+              [% ELSE %]
+                <script>
+                [% IF menu.defined('icons') %]action_images = [% json_encode(menu.icons) %];[% END %]
+                [% IF menu.type == "js" %]
+                  [% IF !action_menus_inserted.defined(menu.data) %]
+                  [% menu.data %]
+                  [% action_menus_inserted.item(menu.data) = 1 %]
+                  [% END %]
+                  print_action_menu([% menu.function %], [% json_encode({"backend" => peer_key, "host" => host.name }) %]);
+                [% ELSE %]
+                  print_action_menu([% menu.data %], [% json_encode({"backend" => peer_key, "host" => host.name }) %]);
+                [% END %]
+                </script>
+              [% END %]
+            </div>
+          [% END %]
+          [% IF enable_shinken_features %]
+            [% prio = host.criticity %]
+            <div class="flex items-center gap-1 mr-3">
+              <span class="font-bold">Priority [% prio %]/5</span>
+              <img class="inline-block" src="[% url_prefix %]plugins/[% shinken_features_path %]/images/criticity_[% prio %].png" alt="Priority [% prio %]/5" title="[% priorities.$prio | html %]">
+            </div>
+          [% END %]
+          [% IF host.action_url_expanded %]
+            [% action_url = proxifiy_url(c, host, get_action_url(c, 2, 1, host.action_url_expanded, host)) %]
+            <div>
+              <a href='[% l = set_target_link(action_url, c.config.action_url_target); l.0 %]' target='[% l.1 %]'>
+                <i class="fa-solid fa-chart-line clickable text-xl" title='Show Performance Chart'></i>
+              </a>
+            </div>
+          [% END %]
+          [% IF host.notes_url_expanded %]
+            <div>
+              <a href='[% l = set_target_link(host.notes_url_expanded, c.config.notes_url_target); l.0 %]' target='[% l.1 %]'>
+                <i class="fa-solid fa-clipboard clickable" title='View Extra Host Notes'></i>
+              </a>
+            </div>
+          [% END %]
+          [% has_bp = has_business_process(host) %]
+          [% IF has_bp %]
+            <div>
+              <a href="bp.cgi?action=details&bp=[% has_bp %]">
+                <i class="fa-solid fa-sitemap clickable text-xl" title='Show Business Process'></i>
+              </a>
+            </div>
+          [% END %]
+        </div>
+      </div>
+      <div>
+        [% PROCESS _extinfo_host_service_details.tt obj=host %]
+      </div>
+    </div>
+
+    [% IF pnp_url %]
+      <div>[% PROCESS _pnp_graph.tt hst=host.name svc="_HOST_" %]</div>
+    [% ELSIF histou_url %]
+      <div>[% PROCESS _histou_graph.tt hst=host.name svc="" %]</div>
+    [% ELSE %]
+      [% graph_url = get_graph_url(c, host, 1)%]
+      [% IF graph_url %]
+        <div>[% PROCESS _third_graph.tt hst=host.name svc="_HOST_" %]</div>
+      [% END %]
+    [% END %]
+  </div>
+
+  <div class="hidden min-[1700px]:block order-2 min-[1700px]:order-3">
+    [% PROCESS _host_command_box.tt %]
+  </div>
+</div>
+
+[% IF host.notes_expanded %]
+  <div class="card w-full mt-5">
+    <div class="head">
+      <h3>Notes</h3>
+    </div>
+    <div class="body">
+      [% host.notes_expanded %]
+    </div>
+  </div>
+[% END %]
+
+<div class="card w-full mt-5 overflow-hidden">
+  <div class="head justify-between">
+    <h3>Host Comments</h3>
+    [% IF c.check_cmd_permissions('host', host.name) %]
+      <div class="flex gap-1">
+        [% UNLESS command_disabled(c, '1') %]
+          <div>
+            <a class="button js-modal-command-link" href="cmd.cgi?cmd_typ=1&amp;host=[% host.name | uri %]&amp;backend=[% peer_key %]">
+              <i class="fa-solid fa-comment mr-1"></i>Add comment
+            </a>
+          </div>
+        [% END %]
+        [% IF comments.size > 0 %]
+          [% UNLESS command_disabled(c, '20') %]
+            <div>
+              <a class="button hover-red js-modal-command-link" href="cmd.cgi?cmd_typ=20&amp;host=[% host.name | uri %]&amp;backend=[% peer_key %]">
+                <i class="fa-solid fa-trash mr-1"></i>Delete all
+              </a>
+            </div>
+          [% END %]
+        [% END %]
+      </div>
+    [% END %]
+  </div>
+  <div>
+    [% IF comments.size > 0 %]
+      [% PROCESS _comments_table.tt comments = comments type='host' names=0 sortprefix='_cmt' %]
+    [% ELSE %]
+      <div class="flex justify-center textALERT p-2">There are no comments</div>
+    [% END %]
+  </div>
+</div>
+
+<div class="card w-full mt-5 overflow-hidden">
+  <div class="head justify-between">
+    <h3>Host Downtimes</h3>
+    [% IF c.check_cmd_permissions('host', host.name) %]
+      <div class="flex gap-1">
+        [% UNLESS command_disabled(c, '55') %]
+          <div>
+            <a class="button js-modal-command-link" href="cmd.cgi?cmd_typ=55&amp;host=[% host.name | uri %]&amp;backend=[% peer_key %]">
+              <i class="fa-solid fa-comment mr-1"></i>Add downtime
+            </a>
+          </div>
+          [% IF use_feature_recurring_downtime %]
+            <div>
+              <a href="extinfo.cgi?type=6&amp;recurring=add&amp;target=host&amp;host=[% host.name | uri %]&amp;backend=[% peer_key %]" class="button js-modal-command-link">
+                <i class="fa-solid fa-comment mr-1"></i>Add recurring downtime</a>
+            </div>
+          [% END %]
+        [% END %]
+        [% IF downtimes %]
+          [% UNLESS command_disabled(c, '5') %]
+            <div>
+              <a class="button hover-red js-modal-command-link" href="cmd.cgi?quick_command=5&amp;confirm=no&amp;host=[% host.name | uri %]&amp;backend=[% peer_key %]&amp;referer=[% as_url_arg(short_uri(c, {referer => 'undef'})) %]">
+                <i class="fa-solid fa-trash mr-1"></i>Delete all
+              </a>
+            </div>
+          [% END %]
+        [% END %]
+        <div>
+          <a class="button" href="showlog.cgi?host=[% host.name | uri %]&amp;backend=[% peer_key %]&amp;pattern=DOWNTIME&amp;start=[% date.now - 86400 * 7 %]&amp;end=[% date.now %]">
+            <i class="fa-solid fa-bars mr-1"></i>List recent downtimes
+          </a>
+        </div>
+      </div>
+    [% END %]
+  </div>
+  <div>
+    [% IF downtimes.size > 0 %]
+      [% PROCESS _downtimes_table.tt downtimes = downtimes type='host' names=0 sortprefix='_dtm' %]
+    [% END %]
+    [% IF recurring_downtimes.size > 0 && use_feature_recurring_downtime %]
+      <div class="px-2 py-1 border-b[%IF downtimes.size > 0 %] border-t[% END %]"><h4>Recurring Host Downtimes</h4></div>
+      [% PROCESS _downtimes_recurring_table.tt downtimes = recurring_downtimes type='host' names=0 %]
+    [% END %]
+    [% IF downtimes.size == 0 && recurring_downtimes.size == 0 %]
+      <div class="flex justify-center p-2 textALERT">There are no downtimes</div>
+    [% END %]
+  </div>
+</div>
+
+[% IF show_full_commandline == 2 || ( show_full_commandline == 1 && c.check_user_roles('authorized_for_configuration_information') ) %]
+  <div class="card mt-5 w-full">
+    <div class="head justify-between">
+      <h3>Configuration Information</h3>
+      <div class="flex gap-x-1">
+        [% IF c.config.exists("has_feature_agents") && c.config.has_feature_agents && cust_vars.exists('AGENT') %]
+          <a class="button" href="agents.cgi?action=edit&hostname=[% host.name | uri %]&backend=[% peer_key %]"><i class="fa-solid fa-cube small"></i>Agent Configuration</a>
+        [% END %]
+        [% IF use_feature_configtool && c.check_user_roles('authorized_for_system_commands') && backends_with_obj_config.$peer_key %]
+          <a class="button" href="conf.cgi?edit&amp;host=[% host.name | uri %]&amp;backend=[% peer_key %]"><i class="fa-solid fa-wrench small"></i>Configure host</a>
+        [% ELSE %]
+          <a class="button" href="config.cgi?type=hosts&amp;jump2=[% host.name | uri %]"><i class="fa-solid fa-eye small"></i>View Configuration</a>
+        [% END %]
+      </div>
+    </div>
+    <div>
+      [% PROCESS _extinfo_command_line.tt %]
+    </div>
+  </div>
+[% END %]
+
+[% PROCESS user_ext_host_info.tt %]
+
+[% PROCESS _footer.tt %]

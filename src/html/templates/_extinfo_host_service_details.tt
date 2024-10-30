@@ -1,0 +1,494 @@
+﻿[% USE date %]
+[% SET peer_key      = obj.peer_key %]
+[% SET program_start = pi_detail.$peer_key.program_start %]
+
+[%
+IF obj.exists('description');
+    type="service";
+    hst_name=obj.host_name;
+    svc_name=obj.description;
+    obsess=obj.obsess_over_service;
+ELSE;
+    type="host";
+    hst_name=obj.name;
+    svc_name='';
+    obsess=obj.obsess_over_host;
+END
+%]
+
+[% BLOCK parent_obj %]
+  [% hObj = 0 %]
+  [% pObj = 0 %]
+  [% IF parent.list.size == 1 %]
+    <a class="link" href="extinfo.cgi?type=1&host=[% parent | uri %]">
+    [% pID = parent %]
+    [% IF parent_nodes.defined(pID) %]
+      [% pObj = parent_nodes.$pID %]
+      [% state = hoststatetext(pObj) %]
+    [% END %]
+  [% ELSE %]
+    <a class="link" href="extinfo.cgi?type=2&host=[% parent.0 | uri %]&service=[% parent.1 | uri %]">
+    [% pID = parent.0 _ ';' _ parent.1 %]
+    [% IF parent_nodes.defined(pID) %]
+      [% pObj = parent_nodes.$pID %]
+      [% state = servicestatetext(pObj) %]
+    [% END %]
+  [% END %]
+  [% IF !pObj %]
+    [% IF obj.host_name == pID %]
+      [% hObj = obj %]
+    [% END %]
+  [% END %]
+
+  [% IF pObj %]
+    [% name = BLOCK %]
+      [% IF parent.list.size == 1 %]
+        [% _host(pObj) | html %]
+      [% ELSE %]
+        [% IF parent.0 != service.host_name %][% _shost(pObj) | html %] - [% END %][% _service(pObj) | html %]
+      [% END %]
+    [% END %]
+
+    [% IF color && pObj.state != 0 %]
+      <div class="badge [% state %] ">
+        [% name %]
+        [% IF pObj.acknowledged %]<i class="fa-solid fa-person-digging"></i>[% END %]
+        [% IF pObj.scheduled_downtime_depth %]<i class="fa-solid fa-moon align-sub"></i>[% END %]
+      </div>
+    [% ELSE %]
+      [% name %]
+    [% END %]
+  [% ELSIF hObj %]
+    [% name = BLOCK %][% _shost(hObj) | html %][% END %]
+
+    [% IF color && hObj.host_state != 0 %]
+      <div class="badge [% hoststate2text(hObj.host_state) %] ">
+        [% name %]
+        [% IF hObj.host_acknowledged %]<i class="fa-solid fa-person-digging"></i>[% END %]
+        [% IF hObj.host_scheduled_downtime_depth %]<i class="fa-solid fa-moon align-sub"></i>[% END %]
+      </div>
+    [% ELSE %]
+      [% name %]
+    [% END %]
+  [% ELSE %]
+    [% pID %]
+  [% END %]
+  </a>
+[% END %]
+
+[% IF stale_hint %]
+<div class="card alert w-auto red relative shadow-none flexcol gap-1 flex-nowrap justify-center p-2 m-2">
+  <h3>Stale [% type | html %] detected</h3>
+  <div>
+    This [% type | html %] has not been checked recently. Have a look at the
+    <a href="[% uri_with(c, { type => 'dtree' }) %]" class="link font-bold">dependency tree <i class="uil uil-share-alt align-middle"></i></a>
+    to get a hint.
+  </div>
+</div>
+[% END %]
+
+<table class="cellspacing-x">
+  [% IF type == "service" %]
+    <tr>
+      <th class="w-0">Service</th>
+      <td>
+        <div class="flex gap-x-2">
+          [% _service(obj) | html %]
+          [% IF service.icon_image_expanded %]
+            <img src='[% logo_path_prefix %][% service.icon_image_expanded %]'[% IF service.icon_image_alt %] alt="[% service.icon_image_alt | html %]" title="[% service.icon_image_alt | html %]"[% END %] width="20" height="20">
+          [% END %]
+        </div>
+      </td>
+    </tr>
+  [% END %]
+  <tr>
+    <th>Host</th>
+    <td>
+      <div class="flex gap-x-2">
+        <div>
+          [% IF svc_name != "" %]
+            [% PROCESS parent_obj color=1 parent=hst_name %] ([% obj.host_address %])
+          [% ELSE %]
+            <a class="link" href="extinfo.cgi?type=1&amp;host=[% hst_name | uri %]">[% _host(obj) | html %]</a> ([% obj.address %])
+          [% END %]
+        </div>
+        [% IF type == "host" %]
+          [% IF host.icon_image_expanded %]
+              <img src='[% logo_path_prefix %][% host.icon_image_expanded %]' alt="[% host.icon_image_alt | html %]" title="[% host.icon_image_alt | html %]" width="20" height="20">
+          [% END %]
+        [% END %]
+      </div>
+    </td>
+  </tr>
+  [% IF type == "host" && obj.name != obj.alias %]
+    <tr>
+      <th>Host Alias</th>
+      <td>[% obj.alias | html %]</td>
+    </tr>
+  [% END %]
+  [% IF obj.depends.size > 0 %]
+    <tr>
+      <th class="align-top"><a href="[% uri_with(c, { type => 'dtree' }) %]" class="link">Dependencies <i class="uil uil-share-alt align-middle"></i></a></th>
+      <td class='whitespace-normal'>
+        [% FOREACH parent IN obj.depends.sort %][% IF !loop.first() %], [% END %][% PROCESS parent_obj color=1 parent = parent %][% END %]
+      </td>
+    </tr>
+  [% END %]
+  [% IF obj.groups.size > 0 %]
+    <tr>
+      <th class="align-top">[% IF type == "service" %]Service Groups[% ELSIF type == "host" %]Host Groups[% END %]</th>
+      <td class='whitespace-normal'><span style="width: 480px; display: block;">
+        [% FOREACH group IN obj.groups.sort %][% IF !loop.first() %], [% END %]<a class="link" href="status.cgi?[% type | html %]group=[% group | uri %]&amp;style=detail">[% group | html %]</a>[% END %]
+      </span></td>
+    </tr>
+  [% END %]
+  [% IF type == "host" %]
+    [% IF obj.parents.size > 0 %]
+      <tr>
+        <th class="align-top"><a href="[% uri_with(c, { type => 'dtree' }) %]" class="link">Parents <i class="uil uil-share-alt align-middle"></i></a></th>
+        <td>
+          [% FOREACH parent IN obj.parents.sort %][% IF !loop.first() %], [% END %][% PROCESS parent_obj color=1 parent = parent %][% END %]
+        </td>
+      </tr>
+    [% END %]
+  [% END %]
+  <tr>
+    <th>Current Status</th>
+    <td>
+      [% IF svc_name != "" %]
+        [% IF obj.has_been_checked == 0 %]<div class='badge PENDING'>PENDING</div>
+        [% ELSIF obj.state == 0         %]<div class='badge OK'>OK</div>
+        [% ELSIF obj.state == 1         %]<div class='badge WARNING'>WARNING</div>
+        [% ELSIF obj.state == 2         %]<div class='badge CRITICAL'>CRITICAL</div>
+        [% ELSIF obj.state == 3         %]<div class='badge UNKNOWN'>UNKNOWN</div>
+        [% END %]
+      [% ELSE %]
+        [% IF obj.has_been_checked == 0 %]<div class='badge PENDING'>PENDING</div>
+        [% ELSIF obj.state == 0         %]<div class='badge UP'>UP</div>
+        [% ELSIF obj.state == 1         %]<div class='badge DOWN'>DOWN</div>
+        [% ELSIF obj.state == 2         %]<div class='badge UNREACHABLE'>UNREACHABLE</div>
+        [% END %]
+      [% END %]
+      <div class="inline-block">
+        <span title="[% date_format(c, obj.last_state_change) %]">(for [% IF obj.last_state_change %][% duration(date.now - obj.last_state_change, 6) %][% ELSE %][% duration(date.now - program_start, 6) %]+[% END %])</span>
+        [% IF obj.acknowledged %] (<i class="fa-solid fa-person-digging"></i> has been acknowledged) [% END %]
+        [% IF obj.scheduled_downtime_depth > 0 %] (<i class="fa-solid fa-moon align-sub"></i>in maintenance) [% END %]
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <th class="align-top">
+      <div
+        class="link hoverable rounded clickable font-normal moreStatusOutputButton"
+        style="visibility: hidden;"
+        onClick="toggleClass('.detail_plugin_outputBlock', 'mightOverflowBlock');"
+        >
+        (toggle full plugin output)
+      </div>
+    </th>
+    <td class='detail_plugin_output whitespace-normal'>
+      <span class="detail_plugin_outputBlock mightOverflowBlock max-w-[500px] max-h-[300px] min-[2200px]:max-w-[1000px] min-[2200px]:max-h-[600px]">
+        [% PROCESS _plugin_output.tt %]
+      </span>
+      <div
+        class="link text-center hoverable rounded clickable font-normal moreStatusOutputButton"
+        style="visibility: hidden;"
+        onClick="toggleClass('.detail_plugin_outputBlock', 'mightOverflowBlock');"
+        >
+        (toggle full plugin output)
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <th class="align-top">
+      Performance Data
+      [% IF obj.perf_data %]
+      <div
+        class="link hoverable rounded clickable font-normal"
+        id="raw_perf_switch"
+        onclick="showElement('perfdata_raw'); hideElement('perfdata_human'); hideElement('raw_perf_switch'); showElement('human_perf_switch');"
+        >
+          (show raw data)
+      </div>
+      <div
+        class="link hoverable rounded clickable font-normal"
+        style="display: none;"
+        id="human_perf_switch"
+        onclick="hideElement('perfdata_raw'); showElement('perfdata_human'); hideElement('human_perf_switch'); showElement('raw_perf_switch');"
+        >
+        (show human data)
+      </div>
+      [% END %]
+    </th>
+    <td class="py-0 whitespace-normal">
+      [% IF obj.perf_data %]
+        [% perf_svc=svc_name; IF perf_svc == ""; perf_svc='_HOST_'; END %]
+        [% PROCESS _perfdata_human.tt
+            state=obj.state
+            plugin_output=obj.plugin_output
+            perfdata=obj.perf_data
+            check_command=obj.check_command
+            hst=hst_name
+            svc=perf_svc
+        %]
+      [% END %]
+    </td>
+  </tr>
+  <tr>
+    <th>Current Attempt</th>
+    <td>[% obj.current_attempt %]/[% obj.max_check_attempts %] ([% IF obj.state_type == 1 %]HARD[% ELSE %]SOFT[% END%] state)</td>
+  </tr>
+  <tr>
+    <th>Last Check Time</th>
+    <td>[% last_check(c, obj.last_check) %]</td>
+  </tr>
+  <tr>
+    <th>Check Type</th>
+    <td>[% IF obj.check_type == 0 %]ACTIVE[% ELSE %]PASSIVE[% END %]</td>
+  </tr>
+  <tr>
+    <th>Check Latency / Duration</th>
+    <td>
+      [% IF obj.check_type == 0 %]
+        [% FILTER format('%.3f') %][% obj.latency %][% END %]
+      [% ELSE %]
+        N/A
+      [% END %]
+      /
+      [% FILTER format('%.3f') %][% obj.execution_time %][% END %] seconds
+    </td>
+  </tr>
+  <tr>
+    <th>Next Scheduled Check</th>
+    <td>
+      [% IF obj.next_check %][% date_format(c, obj.next_check) %][% ELSE %]N/A[% END %]
+      [% IF obj.check_type == 0; d = duration(obj.check_interval * pi_detail.$peer_key.interval_length, 5) %]
+        <span class="check_interval" title="this [% type | html %] will be checked every [% d %]."> (&infin;[% d %])</span>
+      [% END %]
+      [% IF obj.is_executing > 0 %]<div class="spinner" title="This [% type | html %] is currently executing its [% type | html %]check"></div>[% END %]
+      [% IF obj.depends_exec.size > 0 %]
+        (dependency: [% FOREACH parent IN obj.depends_exec %][% IF !loop.first() %], [% END %][% PROCESS parent_obj color=0 parent = parent %][% END %])
+      [% END %]
+    </td>
+  </tr>
+  <tr>
+    <th>Last State Change</th>
+    <td>[% date_format(c, obj.last_state_change) %]</td>
+  </tr>
+  <tr>
+    <th>Last Notification</th>
+    <td>
+      [% IF obj.last_notification != 0 %]
+        [% date_format(c, obj.last_notification) %]
+      [% ELSE %]
+        N/A
+      [% END %]
+      (notification [% obj.current_notification_number %])
+      [% IF obj.current_notification_number == 0 && obj.first_notification_delay != "" && obj.first_notification_delay > 0 %]
+        [% first_remaining = calculate_first_notification_delay_remaining(obj) %]
+        [% IF first_remaining >= 0 %]
+          <span title="This [% type | html %] will send out notifications in [% first_remaining %] minutes">~[% first_remaining %]min</span>
+        [% END %]
+      [% END %]
+      [% IF obj.exists('depends_parents') && obj.depends_parents.size > 0 %]
+        (parents: [% FOREACH parent IN obj.depends_parents %][% IF !loop.first() %], [% END %][% PROCESS parent_obj color=0 parent = parent %][% END %])
+      [% END %]
+      [% IF obj.depends_notify.size > 0 %]
+        (dependency: [% FOREACH parent IN obj.depends_notify %][% IF !loop.first() %], [% END %][% PROCESS parent_obj color=0 parent = parent %][% END %])
+      [% END %]
+    </td>
+  </tr>
+  <tr>
+    <th>Is This [% type | html | ucfirst %] Flapping?</th>
+    <td>
+      [% IF obj.flap_detection_enabled %]
+        [% IF obj.is_flapping %]
+        <div class='badge NO'>FLAPPING</div>
+       [% ELSE %]
+        <div class='badge YES'>OK</div>
+       [% END %]
+        [% IF obj.percent_state_change > 0 %]([% FILTER format('%.2f') %][% obj.percent_state_change %][% END %]% state change)[% END %]
+      [% ELSE %]
+        <div class="badge NA">N/A</div>
+      [% END %]
+    </td>
+  </tr>
+  <tr>
+    <th>In Scheduled Downtime?</th>
+    <td>
+      [% IF obj.scheduled_downtime_depth > 0 %]
+        <div class='badge WARNING'>ACTIVE</div>
+        [% IF downtimes.size > 0 %]
+          [% FOREACH d = downtimes %]
+            [% IF d.start_time > date.now; continue; END %]
+            (<a class="link js-modal-command-link" href="cmd.cgi?cmd_typ=[% IF type == "host" %]78[% ELSE %]79[% END %]&amp;down_id=[% d.id %]&amp;backend=[% d.peer_key %]">[% date_format(c, d.start_time) %] - [% date_format(c, d.end_time) %]</a>)
+          [% END %]
+        [% END %]
+      [% ELSE %]
+        <div class='badge YES'>NONE</div>
+      [% END %]
+    </td>
+  </tr>
+  <tr>
+    <th>In Check Period?</th>
+    <td>
+      [% IF obj.in_check_period %]
+        <div class='badge YES'>YES</div>
+      [% ELSE %]
+        <div class='badge NO'>NO</div>
+      [% END %]
+      (<a class="link" href="config.cgi?type=timeperiods&jump=[% obj.check_period | uri %]">[% obj.check_period | html %]</a>)
+    </td>
+  </tr>
+  <tr>
+    <th>In Notification Period?</th>
+    <td>
+      [% IF obj.in_notification_period %]
+        <div class='badge YES'>YES</div>
+      [% ELSE %]
+        <div class='badge NO'>NO</div>
+      [% END %]
+      (<a class="link" href="config.cgi?type=timeperiods&jump=[% obj.notification_period | uri %]">[% obj.notification_period | html %]</a>)
+    </td>
+  </tr>
+  <tr>
+    <th>Last Update</th>
+    [% IF obj.exists("lmd_last_cache_update") %]
+      <td>[% date_format(c, obj.lmd_last_cache_update) %]( [% duration(date.now - obj.lmd_last_cache_update, 4) %] ago, lmd cached )</td>
+    [% ELSE %]
+      <td>[% date_format(c, date.now) %]( 0s ago )</td>
+    [% END %]
+  </tr>
+  [% IF show_contacts && c.check_user_roles('authorized_for_configuration_information') %]
+    <tr>
+      <th class="align-top">Contacts</th>
+      <td class='whitespace-normal'><span class='mightOverflowBlock clickable' style="width: 480px;" onClick="toggleClass(this, 'mightOverflowBlock');">[% obj.contacts.join(', ') %]</span></td>
+    </tr>
+  [% END %]
+  [% IF show_modified_attributes %]
+    <tr>
+      <th class="align-top">Modified Attributes</th>
+      <td class='whitespace-normal'>
+        [% IF obj.modified_attributes_list.size > 0 %]
+          <div class="flexrow gap-1 max-w-lg">
+            [% FOREACH attr = obj.modified_attributes_list %]
+              <div class='badge WARNING'>[% attr %]</div>
+            [% END %]
+          </div>
+        [% ELSE %]
+          none
+        [% END %]
+      </td>
+    </tr>
+  [% END %]
+  [% IF backends && backends.size > 1 %]
+    <tr>
+      <th class='pb-1'>Monitored by</th>
+      <td class='pb-1'>[% pi_detail.$peer_key.peer_name %]</td>
+    </tr>
+  [% END %]
+  <tr class="border-t borderDefault">
+    <th class='pt-1'>Active Checks</th>
+    <td class='pt-1'>
+      [% IF obj.checks_enabled %]
+        <div class='badge ENABLED'>ENABLED</div>
+      [% ELSE %]
+        <div class='badge DISABLED'>DISABLED</div>
+      [% END %]
+    </td>
+  </tr>
+  <tr>
+    <th>Passive Checks</th>
+    <td>
+      [% IF obj.accept_passive_checks %]
+        <div class='badge ENABLED'>ENABLED</div>
+      [% ELSE %]
+        <div class='badge DISABLED'>DISABLED</div>
+      [% END %]
+    </td>
+  </tr>
+  <tr>
+    <th>Obsessing</th>
+    <td>
+      [% IF obsess %]
+      <div class='badge ENABLED'>ENABLED</div>
+      [% ELSE %]
+      <div class='badge DISABLED'>DISABLED</div>
+      [% END %]
+    </td>
+  </tr>
+  <tr>
+    <th>Notifications</th>
+    <td>
+      [% IF obj.notifications_enabled %]
+        <div class='badge ENABLED'>ENABLED</div>
+      [% ELSE %]
+        <div class='badge DISABLED'>DISABLED</div>
+      [% END %]
+    </td>
+  </tr>
+  <tr>
+    <th>Event Handler</th>
+    <td class='eventHandler'>
+      [% IF !obj.event_handler %]
+        <div class='badge'>UNUSED</div>
+      [% ELSIF obj.event_handler_enabled %]
+        <div class='badge ENABLED'>ENABLED</div>
+        [% IF show_full_commandline == 2 || ( show_full_commandline == 1 && c.check_user_roles('authorized_for_configuration_information') ) %]
+          <div>([% obj.event_handler %])</div>
+        [% END %]
+      [% ELSE %]
+        <div class='badge DISABLED'>DISABLED</div>
+      [% END %]
+    </td>
+  </tr>
+  <tr>
+    <th>Flap Detection</th>
+    <td>
+      [% IF obj.flap_detection_enabled %]
+        <div class='badge ENABLED'>ENABLED</div>
+      [% ELSE %]
+        <div class='badge DISABLED'>DISABLED</div>
+      [% END %]
+    </td>
+  </tr>
+</table>
+
+<script>
+  <!--
+  /* set overflow size for pluginoutput */
+  function setPluginOutputOverflowSize() {
+    var block = jQuery(".detail_plugin_outputBlock")[0];
+    if(!block) {
+      return;
+    }
+
+    var perf = jQuery("#perfdata_human")[0];
+    if(perf) {
+      perf.style.display = "none";
+      var width  = Math.floor(jQuery(perf).parents("TD").first().innerWidth()) - 16;
+      jQuery(perf).parents("DIV").first().css("max-width", width+"px");
+      perf.style.display = "";
+    }
+
+    block.style.maxWidth  = "";
+    block.style.maxHeight = "";
+    jQuery(".moreStatusOutputButton").css("visibility", "hidden");
+    var tdWidth  = Math.floor(jQuery(block).parents("TD").innerWidth()) - 16;
+    var tdHeight = Math.floor(jQuery(block).parents("TD").innerHeight());
+    block.style.setProperty("max-width", tdWidth+"px", "important");
+    if(block.offsetWidth < block.scrollWidth) {
+      jQuery(".moreStatusOutputButton").css("visibility", "");
+    }
+
+    block.style.setProperty("max-height", tdHeight+"px", "important");
+    if(block.offsetHeight+1 < block.scrollHeight) {
+      jQuery(".moreStatusOutputButton").css("visibility", "");
+    }
+  }
+  jQuery(document).ready(function() {
+    setPluginOutputOverflowSize();
+  });
+  window.onresize = setPluginOutputOverflowSize;
+  -->
+  </script>

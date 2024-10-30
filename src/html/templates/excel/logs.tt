@@ -1,0 +1,54 @@
+﻿[% USE date %]
+[% PROCESS _blocks.tt %]
+
+[% size = 1 %]
+[% IF data %][% size = data.size + 1 %][% END %]
+<workbook>
+  <worksheet name='Log Events' autofilter='A1:[% last_col %][% size %]'>
+    <row>
+      <format bold='1' bg_color='silver' align='center'>
+        [% FOREACH col = columns %]
+        [% IF    col == "Time"                %]<cell width='18'>Timestamp</cell>
+        [% ELSIF col == "Site"                %]<cell width='23'>Site</cell>
+        [% ELSIF col == "Event"               %]<cell width='23'>Event</cell>
+        [% ELSIF col == "Event Detail"        %]<cell width='23'>Event Detail</cell>
+        [% ELSIF col == "Hostname"            %]<cell width='25'>Host Name</cell>
+        [% ELSIF col == "Service Description" %]<cell width='30'>Service</cell>
+        [% ELSIF col == "Info"                %]<cell width='10'>Info</cell>
+        [% ELSIF col == "Message"             %]<cell width='50'>Message</cell>
+        [% END %]
+        [% END %]
+      </format>
+    </row>
+    [% FOREACH l = data %]
+    [% PROCESS _logs_line %]
+    [% IF has_type == 1 %]
+      [% message = message.remove('^\s*' _ l.type _ ':\s*') %]
+      [% IF l.host_name != '' %]
+        [% message = message.remove('^\s*' _ escape_regex(l.host_name) _ '\;\s*') %]
+      [% END %]
+      [% IF l.service_description != '' %]
+        [% message = message.remove('^\s*' _ escape_regex(l.service_description) _ '\;\s*') %]
+      [% END %]
+      [% IF info != '' %]
+        [% message = message.remove('^\s*' _ info _ '\;\s*') %]
+      [% END %]
+    [% ELSE %]
+      [% message = message.remove(type _ ':\s*') %]
+    [% END %]
+    <row>
+        [% FOREACH col = columns %]
+        [% IF    col == "Time"                %]<format align="left" num_format="MM/DD/YYYY HH:MM:SS"><cell type="date_time">[% format_date(l.time, "%Y-%m-%dT%H:%M:%S.000") %]</cell></format>
+        [% ELSIF col == "Site"                %]<cell>[% escape_xml(l.peer_name) %]</cell>
+        [% ELSIF col == "Event"               %]<cell>[% IF has_type == 1 %][% l.type %][% ELSE %][% type %][% END %]</cell>
+        [% ELSIF col == "Event Detail"        %]<cell>[% desc %]</cell>
+        [% ELSIF col == "Hostname"            %]<cell>[% escape_xml(l.host_name) %]</cell>
+        [% ELSIF col == "Service Description" %]<cell>[% escape_xml(l.service_description) %]</cell>
+        [% ELSIF col == "Info"                %]<cell>[% escape_xml(info) %]</cell>
+        [% ELSIF col == "Message"             %]<cell>[% escape_xml(message) %]</cell>
+        [% END %]
+        [% END %]
+    </row>
+    [% END %]
+  </worksheet>
+</workbook>

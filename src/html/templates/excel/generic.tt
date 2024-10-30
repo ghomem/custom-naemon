@@ -1,0 +1,53 @@
+﻿[% USE date %]
+[% size = 1 %]
+[% IF data %][% size = data.size + 1 %][% END %]
+<workbook>
+  <worksheet name='[% name %]' autofilter='A1:[% last_col %][% size %]'>
+    <row>
+      <format bold='1' bg_color='silver' align='center'>
+        [% FOREACH col = columns %]
+        <cell width='30'>[% col %]</cell>
+        [% END %]
+      </format>
+    </row>
+    [% FOREACH d = data %]
+    <row>
+      [% FOREACH col = columns %]
+        [%# status column #%]
+        [% IF col == 'Status' %]
+          [% IF d.has_been_checked == 0 %]
+            [% state       = 'PENDING' %]
+            [% state_color = 'grey' %]
+          [% ELSIF d.state == 0 %]
+            [% state       = 'OK' %]
+            [% state_color = 'green' %]
+          [% ELSIF d.state == 1 %]
+            [% state       = 'WARNING' %]
+            [% state_color = 'yellow' %]
+          [% ELSIF d.state == 2 %]
+            [% state       = 'CRITICAL' %]
+            [% state_color = 'red' %]
+          [% ELSIF d.state == 3 %]
+            [% state       = 'UNKNOWN' %]
+            [% state_color = 'orange' %]
+          [% END %]
+            <format bg_color='[% state_color %]'>
+              <cell>[% state %]</cell>
+            </format>
+        [% ELSE %]
+          <cell>[%-
+            value = "";
+            IF col_tr.exists(col);
+              tr = col_tr.$col;
+              value = d.$tr;
+            ELSIF d.exists(col);
+              value = d.$col;
+            END;
+            value.list.join(', ');
+          -%]</cell>
+        [% END %]
+      [% END %]
+    </row>
+    [% END %]
+  </worksheet>
+</workbook>

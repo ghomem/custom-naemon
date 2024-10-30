@@ -1,0 +1,18 @@
+﻿[% PROCESS _header.tt %]
+
+
+  [% PROCESS _infobox.tt %]
+
+  <h1 class="py-4">
+    Changelog
+  </h1>
+
+  <div class="card mx-auto">
+    <div class="body">
+      <pre>
+        [% INSERT Changes.txt %]
+      </pre>
+    </div>
+  </div>
+
+[% PROCESS _footer.tt %]

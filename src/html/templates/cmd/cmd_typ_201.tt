@@ -1,0 +1,29 @@
+﻿[% USE date %]
+[%# which one is authorized? #%]
+[% IF !c.check_cmd_permissions('host', c.request.parameters.host) %]
+  [% WRAPPER error.tt errorMessage = "you are not authorized for this command" errorDescription = "check your configuration if you believe this is an error" %][% END %]
+[% ELSIF !enable_shinken_features %]
+  [% WRAPPER error.tt errorMessage = "this command is for shinken backends only" errorDescription = "check your configuration if you believe this is an error" %][% END %]
+[% ELSE %]
+
+[%# description used by the commands page #%]
+[% WRAPPER $cmd_tt
+   request     = 'You are requesting to launch a host event handler'
+   description = 'This command is used to launch a particular host evant handler.'
+%]
+
+[%# definition of the command send to your backend #%]
+[% BLOCK action %]
+    [% host_name            = c.request.parameters.host %]
+
+    LAUNCH_HOST_EVENT_HANDLER;[% sprintf("%s",host_name) %]
+[% END %]
+
+[% IF c.request.parameters.start_time; SET start_time = c.request.parameters.start_time; ELSE; SET start_time = format_date(date.now,      '%Y-%m-%d %H:%M:00'); END %]
+
+[%# definition of the html form data #%]
+[% PROCESS _cmd_parts.tt %]
+  [% PROCESS cmd_form_host %]
+
+[% END %]
+[% END %]

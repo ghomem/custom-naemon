@@ -1,0 +1,77 @@
+﻿[%- BLOCK site_btn -%]
+  [%- b = initial_backends.$id -%]
+  [%- IF b.exists('cls') && b.cls != "" -%]
+    <button data-id="[% id %]" class="button_peer button_peer[% b.cls %]" title="[% b.last_error | html %]" onclick="toggleBackend('[% id %]')">[% b.name | html %]</button>
+  [%- END -%]
+[%- END -%]
+
+<div id="reload-timer" class="hidden absolute top-[-11px] left-0 h-2 w-48   bg-[color:var(--button-green-bg)] opacity-50 rounded-r-lg transform transition-all ease-linear scale-x-100 origin-left"></div>
+<div id="unload-timer-parent" class="hidden absolute top-[-11px] left-0 h-2 w-full opacity-50 flexrow flex-nowrap gap-0">
+  <div class="h-full w-32 bg-[color:var(--button-green-bg)] flex-none"></div>
+  <div id="unload-timer" class="hidden h-2 w-full  bg-[color:var(--button-green-bg)] transform transition-all ease-linear scale-x-0 origin-left"></div>
+</div>
+[%- IF !hide_backends_chooser && sites != "" && show_sitepanel != "off" -%]
+  [%- IF show_sitepanel == 'list' -%]
+    <div class="buttongroup backends [% IF param_backend.list.size > 3 %]hidden lg:flex[% END %]">
+      [%- FOREACH b = backends -%]
+        [%- PROCESS site_btn id=b -%]
+      [%- END -%]
+    </div>
+  [%- END -%]
+  [%- IF backend_chooser == "switch" -%]
+    [%- IF param_backend.list.size > 0 && param_backend.list.0 != "" -%]
+      <div class="buttongroup backends [% IF show_sitepanel == 'list' %][% IF param_backend.list.size > 3 %]lg:hidden[% ELSE %]hidden[% END %][% END %]" onClick='toggleSitePanel()'>
+        [%- b = param_backend.list.0 -%]
+        <button class='button_peerUP'>[% initial_backends.$b.name | html %]</button>
+        [%- IF sites.disabled > 0 -%]
+          <button class='button_peerDIS'>[% sites.disabled %] more</button>
+        [%- END -%]
+      </div>
+    [%- END -%]
+  [%- ELSE -%]
+    <div class="buttongroup backends [% IF show_sitepanel == 'list' %][% IF param_backend.list.size > 3 %]lg:hidden[% ELSE %]hidden[% END %][% END %]" onClick='toggleSitePanel()'>
+      <button class='[% IF sites.up > 0 %]button_peerUP[% ELSE %]button_peerDIS[% END %]'>[% sites.up %] Up</button>
+      <button class='button_peerDIS'>[% sites.disabled %] Disabled</button>
+      [% broken = []; FOREACH down = initial_backends.values; IF down && down.defined("cls") && down.defined("name") && down.cls == 'DOWN'; broken.push(down.name); END; END %]
+      <button class='[% IF sites.down > 0 %]button_peerDOWN[% ELSE %]button_peerDIS[% END %]' title="[% broken.join(', ') | html %]">[% sites.down %] Down</button>
+    </div>
+  [%- END -%]
+
+  <div id="site_panel" class="card shadow-float fixed left-0 lg:left-auto w-full lg:w-fit min-w-[400px] site_panel_[% show_sitepanel %] hidden">
+    <div class="head justify-between gap-5">
+      <h3>[% IF backend_chooser == "switch" %]Choose Active Site[% ELSE %]Toggle Site Visibility[% END %]</h3>
+      [% IF show_sitepanel == 'tree' %]
+        <div class="flexrow flex-nowrap gap-5">
+            <div class="flex flex-nowrap gap-1 items-center">
+              <span>Bookmarks:</span>
+              <div id="site_panel_bookmark_list_container">
+                <div id="site_panel_bookmark_list" class="flexrow flex-nowrap gap-px">
+                  [% IF user_data.exists('site_panel_bookmarks'); FOREACH b = user_data.site_panel_bookmarks %]
+                    <button onClick='setBackends([% json_encode(b.backends) %], [% json_encode(b.sections) %], this)' data-index="[% loop.index %]">[% b.name | html %]</button>
+                  [% END; END %]
+                </div>
+              </div>
+              <input type='text' value='' placeholder="enter name" id="site_panel_bookmark_new" class="w-20" style="display: none;">
+              <button id="site_panel_bookmark_new_save" class="w-20" style="display: none;" onclick="site_panel_bookmark_save()">save</button>
+              <button id="site_panel_bookmark_plus" onClick='jQuery(this).hide(); jQuery("#site_panel_bookmark_new").show().val("").focus(); jQuery("#site_panel_bookmark_new_save").show();'><i class="uil uil-plus"></i>add</button>
+              <button [% IF !user_data.exists('site_panel_bookmarks') || user_data.site_panel_bookmarks.size == 0 %]disabled [% ELSE %] class="hover-red"[% END %] onclick="jQuery(this).toggleClass('red'); jQuery('#site_panel_bookmark_list_container').toggleClass('delete-mode')" id="site_panel_bookmark_delete"><i class="uil uil-trash-alt"></i>remove</button>
+            </div>
+        </div>
+      [% END %]
+      <div class="flexrow flex-nowrap gap-5">
+        [% IF backend_chooser != 'switch' %]
+          <div class="flex flex-nowrap gap-1 items-center">
+            <span>Toogle:</span>
+            <button class="w-10" onclick="toggleAllSections(true, true);">Local</button>
+            <button class="w-10" onclick="toggleAllSections(true);">All</button>
+            <input type="checkbox" id="all_backends" value="" name="all_backends" onclick="toggleAllSections();">
+          </div>
+        [% END %]
+        [% IF show_sitepanel == 'tree' %]
+          <input type="text" placeholder="filter" class="deletable" id="site_panel_search" onchange='site_panel_search()' onkeyup='site_panel_search()' onfocus='site_panel_search()'>
+        [% END %]
+      </div>
+    </div>
+    <div id="site_panel_content" class="body"></div>
+  </div>
+[% END %]

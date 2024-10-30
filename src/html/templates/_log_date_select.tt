@@ -1,0 +1,39 @@
+﻿[% USE date %]
+
+<div class="card min-w-[400px]">
+  <div class="head justify-center">
+    <h3>Log File Navigation</h3>
+  </div>
+  <div class="body">
+    <table class="w-full">
+      <tr>
+        <td class="clickable hoverable rounded w-24 whitespace-nowrap text-center px-2" onclick="document.getElementById('archive').value='-1'; document.getElementById('date_form').submit();" rowspan="2">
+          Previous Day<br>
+          <i class="uil uil-angle-double-left text-4xl w-9 h-9" title='Previous Day'></i>
+        </td>
+        <td>
+          <div class="flexcol gap-2 w-full items-center">
+            <div class="flex flex-nowrap gap-1 w-fit">
+              <input type="text" class="date_input cal_popup_range cal_popup_select cal_popup_auto_submit w-36" value="[% IF format_date(start, '%S') == "00" %][% format_date(start, '%Y-%m-%d %H:%M') %][% ELSE %][% format_date(start, '%Y-%m-%d %H:%M:%S') %][% END %]" id="start" name="start">
+              <div><i class="uil uil-schedule text-lg cal_icon cal_popup for_start" title="pick date"></i></div>
+            </div>
+            <div class="flex flex-nowrap gap-1 w-fit">
+              <input type="text" class="date_input cal_popup_range cal_popup_select cal_popup_auto_submit w-36" value="[% IF format_date(end, '%S') == "00" %][% format_date(end, '%Y-%m-%d %H:%M') %][% ELSE %][% format_date(end, '%Y-%m-%d %H:%M:%S') %][% END %]" id="end" name="end">
+              <div><i class="uil uil-schedule text-lg cal_icon cal_popup for_end" title="pick date"></i></div>
+            </div>
+          </div>
+        </td>
+        <td class="[% IF end < date.now %]clickable hoverable rounded[% ELSE %]disabled[% END %] w-24 whitespace-nowrap text-center px-2" [% IF end < date.now %]onclick="document.getElementById('archive').value='+1'; document.getElementById('date_form').submit();"[% END %] rowspan="2">
+          Next Day<br>
+          <i class="uil uil-angle-double-right text-4xl w-9 h-9" title='Next Day'></i>
+        </td>
+      </tr>
+      <tr>
+        <td class="flex justify-center">
+          <input type='submit' value='Update' class="w-24 mt-1">
+          <input type="hidden" name="archive" value="" id="archive">
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
