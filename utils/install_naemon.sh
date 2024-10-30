@@ -203,7 +203,7 @@ sudo sed -i "s|^\(\s*\$conf\['graph_opt'\]\s*=\s*\)\"\";|\1\"--color BACK#FFFFFF
 
 # Add the custom html files for our custom experience
 cp -r /opt/custom-naemon/src/html/templates /usr/share/thruk/
-chown -R /usr/share/thruk/templates
+chown -R root:root /usr/share/thruk/templates
 
 systemctl enable naemon thruk apache2
 systemctl restart naemon
