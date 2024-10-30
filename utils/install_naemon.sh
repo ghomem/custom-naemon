@@ -104,7 +104,9 @@ cp /opt/custom-naemon/src/naemon/timeperiods.cfg /etc/naemon/conf.d/
 cp /opt/custom-naemon/src/naemon/24x7-nobackups.cfg /etc/naemon/conf.d/
 cp /opt/custom-naemon/src/naemon/services.cfg /etc/naemon/conf.d/templates/
 cp /opt/custom-naemon/src/naemon/templates.cfg /etc/naemon/conf.d/templates/
+cp /opt/custom-naemon/src/thruk/thruk.conf /etc/thruk/thruk.conf
 cp /opt/custom-naemon/src/naemon/naemon.cfg /etc/naemon/
+chown root:root /etc/thruk/thruk.conf
 chown naemon:naemon /etc/naemon/naemon.cfg
 chmod 644 /etc/naemon/naemon.cfg
 
