@@ -2,7 +2,8 @@ import sys
 import subprocess
 import os
 import re
-from prettytable import PrettyTable
+from rich.console import Console
+from rich.table import Table
 
 def print_usage():
     usage = """\033[94mUsage:\033[0m
