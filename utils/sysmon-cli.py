@@ -2,6 +2,7 @@ import sys
 import subprocess
 import os
 import re
+from prettytable import PrettyTable
 
 def print_usage():
     usage = """\033[94mUsage:\033[0m
@@ -78,17 +79,21 @@ def remove_host(host_name):
 
 def list_hosts():
     try:
-        result = subprocess.run("sudo pynag list host_name address WHERE object_type=host | egrep -v '^null'", 
-                                shell=True, check=True, capture_output=True, text=True)
+        result = subprocess.run(
+            "sudo pynag list host_name address WHERE object_type=host | egrep -v '^null'",
+            shell=True, check=True, capture_output=True, text=True
+        )
     except subprocess.CalledProcessError as e:
         print(f"\033[91mCommand failed: {e}\033[0m")
         sys.exit(1)
 
     lines = result.stdout.strip().split('\n')
-    # Print the header
-    print(f"\033[94m{'host_name':<20} {'address':<20} {'host_definition_file':<60} {'service_definition_file':<60}\033[0m")
-    print('\033[90m' + '-' * 140 + '\033[0m')
-    
+
+    # Create a PrettyTable object
+    table = PrettyTable()
+    table.field_names = ["host_name", "address", "host_definition_file", "service_definition_file"]
+    table.align = "l"  # Align text to the left
+
     for line in lines:
         if "---" in line or "host_name" in line:
             continue
@@ -98,9 +103,11 @@ def list_hosts():
             address = parts[1]
             host_def_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-host.cfg"
             service_def_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg"
-            print(f"\033[92m{host_name:<20} {address:<20} {host_def_file:<60} {service_def_file:<60}\033[0m")
-    
-    print('\033[90m' + '-' * 140 + '\033[0m')
+            # Add the row to the table
+            table.add_row([host_name, address, host_def_file, service_def_file])
+
+    # Print the table
+    print(table)
 
 def add_template(host_name, template_name):
     if not host_exists(host_name):
