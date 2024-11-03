@@ -78,21 +78,24 @@ def remove_host(host_name):
     restart_services()
 
 def list_hosts():
+    console = Console()
     try:
         result = subprocess.run(
             "sudo pynag list host_name address WHERE object_type=host | egrep -v '^null'",
             shell=True, check=True, capture_output=True, text=True
         )
     except subprocess.CalledProcessError as e:
-        print(f"\033[91mCommand failed: {e}\033[0m")
+        console.print(f"[bold red]Command failed: {e}[/bold red]")
         sys.exit(1)
 
     lines = result.stdout.strip().split('\n')
 
-    # Create a PrettyTable object
-    table = PrettyTable()
-    table.field_names = ["host_name", "address", "host_definition_file", "service_definition_file"]
-    table.align = "l"  # Align text to the left
+    # Create a Rich Table
+    table = Table(show_header=True, header_style="bold blue")
+    table.add_column("host_name", style="green")
+    table.add_column("address", style="green")
+    table.add_column("host_definition_file", style="green")
+    table.add_column("service_definition_file", style="green")
 
     for line in lines:
         if "---" in line or "host_name" in line:
@@ -104,10 +107,10 @@ def list_hosts():
             host_def_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-host.cfg"
             service_def_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg"
             # Add the row to the table
-            table.add_row([host_name, address, host_def_file, service_def_file])
+            table.add_row(host_name, address, host_def_file, service_def_file)
 
     # Print the table
-    print(table)
+    console.print(table)
 
 def add_template(host_name, template_name):
     if not host_exists(host_name):
