@@ -78,6 +78,7 @@ mkdir -p /etc/naemon/okconfig/examples/
 echo "Installing necessary Python packages..."
 apt-get install python3 python3-venv python3-pip -y -q
 pip3 install pynag
+pip3 install rich
 ln -s /usr/bin/python3 /usr/bin/python
 
 # Update okconfig configuration
@@ -125,6 +126,7 @@ chmod 664 /etc/naemon/conf.d/slack.cfg
 
 sed -i "s|^PLACEHOLDER1|${SLACKWEBHOOK}|" /etc/naemon/conf.d/slack.cfg
 sed -i "s|^PLACEHOLDER2|${SLACKWEBHOOK}|" /etc/naemon/conf.d/slack.cfg
+sed -i "s|^PLACEHOLDER|${FQDN}|" /etc/thruk/thruk.conf
 
 cp /opt/custom-naemon/utils/sysmon-cli.py /opt/sysmon-utils/
 cp /opt/custom-naemon/utils/update-config.sh /opt/sysmon-utils/
