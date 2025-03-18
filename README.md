@@ -1,0 +1,1 @@
+This repository provides an automated setup for deploying a fully functional and customizable monitoring server using Naemon and Thruk, seamlessly integrated with Puppet. It streamlines the installation process and ensures consistent configuration management for scalable and efficient monitoring.
