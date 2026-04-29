@@ -28,7 +28,19 @@ def execute_command(command):
         print(f"\033[91mCommand failed: {e}\033[0m")
         sys.exit(1)
 
+def validate_naemon_config():
+    try:
+        subprocess.run(
+            "sudo -u naemon naemon -v /etc/naemon/naemon.cfg",
+            check=True,
+            shell=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"\033[91mNaemon config validation failed. Services were not restarted: {e}\033[0m")
+        sys.exit(1)
+
 def restart_services():
+    validate_naemon_config()
     services = ["naemon", "thruk", "apache2"]
     for service in services:
         try:
