@@ -471,14 +471,14 @@ def set_service_notification_period(host_name, service_name, notification_period
     found = False
     for i, line in enumerate(lines):
         if line.strip().startswith("notification_period"):
-            lines[i] = f"        notification_period {notification_period}"
+            lines[i] = f"        notification_period    {notification_period}"
             found = True
             break
 
     if not found:
-        lines.insert(-1, f"        notification_period {notification_period}")
+        lines.insert(-1, f"        notification_period    {notification_period}")
 
-    service_blocks[selected_block_index] = "\n".join(lines) + "\n"
+    service_blocks[selected_block_index] = "\n" + "\n".join(lines) + "\n"
 
     try:
         with open(instance_file, "w") as f:
