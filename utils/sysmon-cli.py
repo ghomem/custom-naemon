@@ -33,10 +33,17 @@ def validate_naemon_config():
         subprocess.run(
             "sudo -u naemon naemon -v /etc/naemon/naemon.cfg",
             check=True,
-            shell=True
+            shell=True,
+            capture_output=True,
+            text=True
         )
+        print("\033[92mNaemon config validation passed.\033[0m")
     except subprocess.CalledProcessError as e:
-        print(f"\033[91mNaemon config validation failed. Services were not restarted: {e}\033[0m")
+        print("\033[91mNaemon config validation failed. Services were not restarted.\033[0m")
+        if e.stdout:
+            print(e.stdout)
+        if e.stderr:
+            print(e.stderr)
         sys.exit(1)
 
 def restart_services():
