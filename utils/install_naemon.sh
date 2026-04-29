@@ -98,6 +98,15 @@ git clone https://github.com/ghomem/custom-naemon.git
 chmod -R 664 /opt/custom-naemon/
 chown -R naemon:naemon /opt/custom-naemon/src/naemon/
 
+# Ensure external/company-specific config directories exist.
+# These directories are intentionally not populated or managed by custom-naemon.
+mkdir -p /etc/naemon/external.d/commands.d
+mkdir -p /etc/naemon/external.d/services.d
+mkdir -p /etc/naemon/external.d/contacts.d
+mkdir -p /etc/naemon/external.d/timeperiods.d
+chown -R root:root /etc/naemon/external.d
+chmod -R 755 /etc/naemon/external.d
+
 # Copy custom configurations to Naemon directory
 echo "Copying custom configurations to Naemon directory..."
 cp /opt/custom-naemon/src/naemon/commands.cfg /etc/naemon/conf.d/

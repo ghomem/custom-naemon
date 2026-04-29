@@ -2,6 +2,15 @@
 
 cd /opt/custom-naemon
 
+# Ensure external/company-specific config directories exist.
+# These directories are intentionally not populated or managed by custom-naemon.
+mkdir -p /etc/naemon/external.d/commands.d
+mkdir -p /etc/naemon/external.d/services.d
+mkdir -p /etc/naemon/external.d/contacts.d
+mkdir -p /etc/naemon/external.d/timeperiods.d
+chown -R root:root /etc/naemon/external.d
+chmod -R 755 /etc/naemon/external.d
+
 # Pull the latest changes in the repository
 echo "Pulling the latest changes..."
 git pull
