@@ -135,7 +135,6 @@ chmod 664 /etc/naemon/conf.d/slack.cfg
 
 sed -i "s|^PLACEHOLDER1|${SLACKWEBHOOK}|" /etc/naemon/conf.d/slack.cfg
 sed -i "s|^PLACEHOLDER2|${SLACKWEBHOOK}|" /etc/naemon/conf.d/slack.cfg
-sed -i "s|^PLACEHOLDER|${FQDN}|" /etc/thruk/thruk.conf
 
 cp /opt/custom-naemon/utils/sysmon-cli.py /opt/sysmon-utils/
 cp /opt/custom-naemon/utils/update-config.sh /opt/sysmon-utils/

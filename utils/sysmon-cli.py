@@ -14,7 +14,6 @@ def print_usage():
     sysmon-cli \033[92madd-service\033[0m <host_name> --service <service_template> [--description <description>]
     sysmon-cli \033[92mremove-service\033[0m <host_name> --service <service_name>
     sysmon-cli \033[92mmodify-service\033[0m <host_name> --service <service_name>
-    sysmon-cli \033[92mset-service-notification-period\033[0m <host_name> --service <service_template> --period <timeperiod>
     sysmon-cli \033[92mlist-host-services\033[0m <host_name>
     sysmon-cli \033[92mlist-available-services\033[0m [--details]"""
     print(usage)
@@ -63,18 +62,26 @@ def restart_services():
                 print(f"\033[91mFailed to restart {service} service: {ge}\033[0m")
                 sys.exit(1)
 
-def timeperiod_exists(timeperiod_name):
+def get_timeperiods():
     try:
         result = subprocess.run(
-            f"sudo pynag list timeperiod_name WHERE object_type=timeperiod and timeperiod_name={timeperiod_name}",
+            "sudo pynag list timeperiod_name WHERE object_type=timeperiod",
             shell=True,
             check=True,
             capture_output=True,
             text=True
         )
-        return timeperiod_name in result.stdout.split()
+
+        timeperiods = []
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line or line.startswith("-") or line == "timeperiod_name":
+                continue
+            timeperiods.append(line.split()[0])
+
+        return sorted(set(timeperiods))
     except subprocess.CalledProcessError:
-        return False
+        return []
 
 def host_exists(host_name):
     try:
@@ -366,11 +373,10 @@ def modify_service(host_name, service_name):
     service_vars = get_service_custom_vars(service_name)
 
     if not service_vars:
-        print(f"\033[91mThe given service does not have custom variables.\033[0m")
-        return
+        service_vars = {}
 
-    print(f"\033[92mAvailable custom variables:\033[0m")
-    variables_list = list(service_vars.keys()) + ['notifications_enabled'] + ['service_description']
+    print(f"\033[92mAvailable editable fields:\033[0m")
+    variables_list = list(service_vars.keys()) + ['notifications_enabled'] + ['service_description'] + ['notification_period']
     for i, var in enumerate(variables_list, start=1):
         print(f"\033[93m{i}. {var}\033[0m")
 
@@ -391,6 +397,49 @@ def modify_service(host_name, service_name):
         except ValueError:
             print("\033[91mInvalid input. Please enter a number.\033[0m")
             continue
+        if var == "notifications_enabled":
+            notification_options = [
+                ("1", "enabled"),
+                ("0", "disabled"),
+            ]
+
+            print("\033[92mAvailable notification states:\033[0m")
+            for i, (_, label) in enumerate(notification_options, start=1):
+                print(f"\033[93m{i}. {label}\033[0m")
+
+            notification_input = input("Enter the number of the notification state to use: ").strip()
+            try:
+                notification_index = int(notification_input) - 1
+                if 0 <= notification_index < len(notification_options):
+                    modified_vars[var] = notification_options[notification_index][0]
+                else:
+                    print("\033[91mInvalid choice. Please select a number from the list.\033[0m")
+                continue
+            except ValueError:
+                print("\033[91mInvalid input. Please enter a number.\033[0m")
+                continue
+        if var == "notification_period":
+            timeperiods = get_timeperiods()
+            if not timeperiods:
+                print("\033[91mNo timeperiods found.\033[0m")
+                continue
+
+            print("\033[92mAvailable time periods:\033[0m")
+            for i, timeperiod in enumerate(timeperiods, start=1):
+                print(f"\033[93m{i}. {timeperiod}\033[0m")
+
+            period_input = input("Enter the number of the time period to use: ").strip()
+            try:
+                period_index = int(period_input) - 1
+                if 0 <= period_index < len(timeperiods):
+                    modified_vars[var] = timeperiods[period_index]
+                else:
+                    print("\033[91mInvalid choice. Please select a number from the list.\033[0m")
+                continue
+            except ValueError:
+                print("\033[91mInvalid input. Please enter a number.\033[0m")
+                continue
+
         value = input(f"Enter the value for {var}: ").strip()
         if var.endswith("_THRESHOLD") or var.endswith("_PORT") or var == "__TCP_PORT" or "WARNING" in var or "CRITICAL" in var:
             if not value.isdigit():
@@ -427,86 +476,6 @@ def modify_service(host_name, service_name):
 
     # Remove the added comments
     remove_comments(instance_file)
-    restart_services()
-
-def set_service_notification_period(host_name, service_name, notification_period):
-    if not host_exists(host_name):
-        print(f"\033[91mHost '{host_name}' does not exist.\033[0m")
-        return
-
-    if not service_template_exists(service_name):
-        print(f"\033[91mService template '{service_name}' does not exist.\033[0m")
-        return
-
-    if not timeperiod_exists(notification_period):
-        print(f"\033[91mTimeperiod '{notification_period}' does not exist.\033[0m")
-        return
-
-    instance_file = f"/etc/naemon/okconfig/hosts/default/{host_name}-instance.cfg"
-
-    try:
-        with open(instance_file, "r") as f:
-            content = f.read()
-    except FileNotFoundError as e:
-        print(f"\033[91mInstance file not found: {e}\033[0m")
-        return
-
-    service_blocks = content.split("define service {")
-    matching_blocks = []
-
-    for i, block in enumerate(service_blocks[1:], start=1):
-        lines = block.strip().split('\n')
-        if any(re.match(rf'\s*use\s+{service_name}', line) for line in lines):
-            service_description = next(
-                (line.split('service_description', 1)[1].strip() for line in lines if line.strip().startswith('service_description')),
-                "Service with default description"
-            )
-            matching_blocks.append((i, block, service_description))
-
-    if not matching_blocks:
-        print(f"\033[91mThe given service is not defined for the given host.\033[0m")
-        return
-
-    if len(matching_blocks) > 1:
-        print(f"\033[93m{len(matching_blocks)} services found for host {host_name} with use {service_name}:\033[0m")
-        for i, (_, _, description) in enumerate(matching_blocks, start=1):
-            print(f"\033[94m{i}. {description}\033[0m")
-        choice = input("\033[93mType the number of the service you wish to modify: \033[0m")
-        try:
-            idx = int(choice) - 1
-            if 0 <= idx < len(matching_blocks):
-                selected_block_index = matching_blocks[idx][0]
-            else:
-                print("\033[91mInvalid choice. No service was modified.\033[0m")
-                return
-        except ValueError:
-            print("\033[91mInvalid input. No service was modified.\033[0m")
-            return
-    else:
-        selected_block_index = matching_blocks[0][0]
-
-    lines = service_blocks[selected_block_index].strip().split("\n")
-
-    found = False
-    for i, line in enumerate(lines):
-        if line.strip().startswith("notification_period"):
-            lines[i] = f"        notification_period    {notification_period}"
-            found = True
-            break
-
-    if not found:
-        lines.insert(-1, f"        notification_period    {notification_period}")
-
-    service_blocks[selected_block_index] = "\n" + "\n".join(lines) + "\n"
-
-    try:
-        with open(instance_file, "w") as f:
-            f.write("define service {".join(service_blocks))
-        print(f"\033[92mService notification period set to '{notification_period}'.\033[0m")
-    except Exception as e:
-        print(f"\033[91mFailed to update instance file: {e}\033[0m")
-        return
-
     restart_services()
 
 def remove_comments(file_path):
@@ -603,19 +572,6 @@ if __name__ == "__main__":
             remove_service(sys.argv[2], sys.argv[4])
         elif command == "modify-service" and len(sys.argv) == 5 and sys.argv[3] == "--service":
             modify_service(sys.argv[2], sys.argv[4])
-        elif command == "set-service-notification-period":
-            if len(sys.argv) != 7:
-                print_usage()
-                sys.exit(1)
-            if sys.argv[3] != "--service" or sys.argv[5] != "--period":
-                print_usage()
-                sys.exit(1)
-
-            host_name = sys.argv[2]
-            service_name = sys.argv[4]
-            notification_period = sys.argv[6]
-
-            set_service_notification_period(host_name, service_name, notification_period)
         elif command == "list-available-services" and (len(sys.argv) == 2 or (len(sys.argv) == 3 and sys.argv[2] == "--details")):
             details = "--details" in sys.argv
             all_services(details)

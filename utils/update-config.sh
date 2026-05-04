@@ -54,5 +54,6 @@ cp /opt/custom-naemon/src/thruk/* /etc/thruk
 cp /opt/custom-naemon/src/okconfig/instance.cfg-example /etc/naemon/okconfig/examples/
 
 cp /opt/custom-naemon/utils/sysmon-cli.py /opt/sysmon-utils/
+cp /opt/custom-naemon/utils/update-config.sh /opt/sysmon-utils/
 
 restart_services
