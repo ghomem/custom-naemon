@@ -382,9 +382,9 @@ def modify_service(host_name, service_name):
 
     # Interactive prompt
     modified_vars = {}
-    print("\033[94mWhen you are done, please type Exit.\033[0m")
+    print("\033[94mWhen you are done, please type exit.\033[0m")
     while True:
-        var_input = input("Enter the number of the custom variable to modify: ").strip()
+        var_input = input("Enter the number of the editable field to modify: ").strip()
         if var_input.lower() == "exit":
             break
         try:
@@ -412,6 +412,7 @@ def modify_service(host_name, service_name):
                 notification_index = int(notification_input) - 1
                 if 0 <= notification_index < len(notification_options):
                     modified_vars[var] = notification_options[notification_index][0]
+                    print(f"\033[92mQueued change: {var} -> {notification_options[notification_index][1]}\033[0m")
                 else:
                     print("\033[91mInvalid choice. Please select a number from the list.\033[0m")
                 continue
@@ -433,6 +434,7 @@ def modify_service(host_name, service_name):
                 period_index = int(period_input) - 1
                 if 0 <= period_index < len(timeperiods):
                     modified_vars[var] = timeperiods[period_index]
+                    print(f"\033[92mQueued change: {var} -> {timeperiods[period_index]}\033[0m")
                 else:
                     print("\033[91mInvalid choice. Please select a number from the list.\033[0m")
                 continue
@@ -450,21 +452,23 @@ def modify_service(host_name, service_name):
                 print("\033[91mThis variable takes only a boolean value [0 for notificattions off or 1 for notifications on].\033[0m")
                 continue
         modified_vars[var] = value
+        print(f"\033[92mQueued change: {var} -> {value}\033[0m")
 
     # Update the selected service block with modified variables
     lines = service_blocks[selected_block_index].strip().split("\n")
     for var, value in modified_vars.items():
+        formatted_line = f"        {var:<25} {value}"
+
         found = False
         for i, line in enumerate(lines):
             if line.strip().startswith(var):
-                lines[i] = f"        {var} {value}"
+                lines[i] = formatted_line
                 found = True
                 break
         if not found:
-            lines.insert(-1, f"        {var} {value}")  # Insert before the last line
+            lines.insert(-1, formatted_line)  # Insert before the last line
 
-    service_blocks[selected_block_index] = "\n".join(lines) + "\n"
-
+    service_blocks[selected_block_index] = "\n" + "\n".join(lines) + "\n"
     # Write the updated content back to the file
     try:
         with open(instance_file, "w") as f:
