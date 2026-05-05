@@ -62,6 +62,20 @@ def restart_services():
                 print(f"\033[91mFailed to restart {service} service: {ge}\033[0m")
                 sys.exit(1)
 
+def get_current_field_value(lines, field_name, service_vars):
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith(field_name):
+            parts = stripped.split(None, 1)
+            if len(parts) == 2:
+                return parts[1].strip()
+            return ""
+
+    if field_name in service_vars:
+        return f"{service_vars[field_name]} (template default)"
+
+    return "inherited/default"
+
 def get_timeperiods():
     try:
         result = subprocess.run(
@@ -375,6 +389,8 @@ def modify_service(host_name, service_name):
     if not service_vars:
         service_vars = {}
 
+    selected_service_lines = service_blocks[selected_block_index].strip().split("\n")
+
     print(f"\033[92mAvailable editable fields:\033[0m")
     variables_list = list(service_vars.keys()) + ['notifications_enabled'] + ['service_description'] + ['notification_period']
     for i, var in enumerate(variables_list, start=1):
@@ -391,6 +407,8 @@ def modify_service(host_name, service_name):
             var_index = int(var_input) - 1
             if 0 <= var_index < len(variables_list):
                 var = variables_list[var_index]
+                current_value = get_current_field_value(selected_service_lines, var, service_vars)
+                print(f"\033[94mCurrent value for {var}: \033[92m{current_value}\033[0m")
             else:
                 print("\033[91mInvalid choice. Please select a number from the list.\033[0m")
                 continue
